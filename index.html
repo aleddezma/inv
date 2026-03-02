@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0ea5e9" id="meta-theme-color">
+    <title>Inventario de Equipo TI</title>
+    <!-- Enlace para el Manifest de Instalación PWA -->
+    <link id="manifest-link" rel="manifest" href="">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- LIBRERÍA PARA ESCANEAR CÓDIGOS DE BARRAS/QR -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <!-- MOTOR DE TEMAS Y VARIABLES CSS -->
+    <style>
+        :root {
+            /* Tema por defecto: Azul Océano */
+            --brand-50: #f0f9ff; --brand-100: #e0f2fe; --brand-200: #bae6fd; --brand-300: #7dd3fc;
+            --brand-400: #38bdf8; --brand-500: #0ea5e9; --brand-600: #0284c7; --brand-700: #0369a1;
+            --brand-800: #075985; --brand-900: #0c4a6e;
+        }
+        :root[data-theme="green"] {
+            /* Verde Informática */
+            --brand-50: #ecfdf5; --brand-100: #d1fae5; --brand-200: #a7f3d0; --brand-300: #6ee7b7;
+            --brand-400: #34d399; --brand-500: #10b981; --brand-600: #059669; --brand-700: #047857;
+            --brand-800: #065f46; --brand-900: #064e3b;
+        }
+        :root[data-theme="purple"] {
+            /* Púrpura Cósmico */
+            --brand-50: #f5f3ff; --brand-100: #ede9fe; --brand-200: #ddd6fe; --brand-300: #c4b5fd;
+            --brand-400: #a78bfa; --brand-500: #8b5cf6; --brand-600: #7c3aed; --brand-700: #6d28d9;
+            --brand-800: #5b21b6; --brand-900: #4c1d95;
+        }
+        :root[data-theme="orange"] {
+            /* Naranja Fuego */
+            --brand-50: #fffbeb; --brand-100: #fef3c7; --brand-200: #fde68a; --brand-300: #fcd34d;
+            --brand-400: #fbbf24; --brand-500: #f59e0b; --brand-600: #d97706; --brand-700: #b45309;
+            --brand-800: #92400e; --brand-900: #78350f;
+        }
+        :root[data-theme="rose"] {
+            /* Rosa Neón */
+            --brand-50: #fff1f2; --brand-100: #ffe4e6; --brand-200: #fecdd3; --brand-300: #fda4af;
+            --brand-400: #fb7185; --brand-500: #f43f5e; --brand-600: #e11d48; --brand-700: #be123c;
+            --brand-800: #9f1239; --brand-900: #881337;
+        }
+
+        [v-cloak] { display: none; }
+        body { transition: background-color 0.3s ease, color 0.3s ease; }
+        .dark-transition { transition: all 0.3s ease; }
+        .theme-transition { transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .loader { border-top-color: var(--brand-500); animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Scrollbar visible y elegante para el formulario modal */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
+    </style>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { 
+                        brand: { 
+                            50: 'var(--brand-50)', 100: 'var(--brand-100)', 200: 'var(--brand-200)', 
+                            300: 'var(--brand-300)', 400: 'var(--brand-400)', 500: 'var(--brand-500)', 
+                            600: 'var(--brand-600)', 700: 'var(--brand-700)', 800: 'var(--brand-800)', 
+                            900: 'var(--brand-900)' 
+                        } 
+                    }
+                }
+            }
+        }
+        
+        window.deferredPrompt = null;
+        window.isAppInstallable = false;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); 
+            window.deferredPrompt = e;
+            window.isAppInstallable = true;
+            window.dispatchEvent(new Event('pwa-installable')); 
+        });
+    </script>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans min-h-screen transition-colors duration-300">
+
+    <!-- EL CONTENEDOR PRINCIPAL AHORA SE EXPANDE AL 100% SIN RESTRICCIONES -->
+    <div id="app" v-cloak class="min-h-screen flex flex-col transition-colors w-full relative">
+        
+        <!-- PANTALLA DE CARGA -->
+        <div v-if="isCheckingAuth" class="flex flex-col items-center justify-center absolute inset-0 bg-slate-100 dark:bg-slate-950 z-50">
+            <div class="w-12 h-12 border-4 border-slate-200 dark:border-slate-700 rounded-full loader mb-4"></div>
+            <p class="text-slate-500 dark:text-slate-400 font-medium animate-pulse">Conectando al sistema...</p>
+        </div>
+
+        <!-- PANTALLA DE LOGIN / REGISTRO -->
+        <div v-else-if="!isLoggedIn" class="w-full max-w-md p-6 bg-white dark:bg-slate-800 sm:rounded-2xl sm:shadow-2xl border border-transparent dark:border-slate-700 m-auto dark-transition relative">
+            
+            <div class="absolute -top-16 right-0 sm:top-4 sm:right-4 z-50">
+                <div v-if="mostrarMenuTemas" @click="mostrarMenuTemas = false" class="fixed inset-0 z-40"></div>
+                <div class="relative z-50">
+                    <button @click="mostrarMenuTemas = !mostrarMenuTemas" class="text-slate-400 hover:text-brand-500 transition text-xl p-2">
+                        <i class="fa-solid fa-palette"></i>
+                    </button>
+                    <div v-if="mostrarMenuTemas" class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 overflow-hidden animate-fade-in-down">
+                        <p class="px-4 py-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-700 mb-1">Color del Sistema</p>
+                        <button v-for="t in paletaTemas" :key="t.id" @click="cambiarColorTema(t.id)" class="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition">
+                            <span class="w-4 h-4 rounded-full shadow-sm" :class="t.bgClass"></span>
+                            <span class="text-sm font-medium" :class="temaActual === t.id ? 'text-brand-600 dark:text-brand-400 font-bold' : 'text-slate-700 dark:text-slate-300'">{{ t.nombre }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mb-8 mt-4">
+                <div class="w-16 h-16 bg-gradient-to-br from-brand-100 to-brand-200 text-brand-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner theme-transition">
+                    <i class="fa-solid fa-barcode"></i>
+                </div>
+                <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-700 to-brand-500 theme-transition">Inventario TI</h2>
+                <p class="text-sm text-slate-500 mt-1">Gestión de activos tecnológicos</p>
+            </div>
+
+            <div class="flex p-1 bg-slate-100 dark:bg-slate-900 rounded-lg mb-6 theme-transition">
+                <button @click="authMode = 'login'; authError = ''" :class="authMode === 'login' ? 'bg-white dark:bg-slate-700 shadow-sm text-brand-600 font-bold' : 'text-slate-500'" class="flex-1 py-2 text-sm rounded-md transition-all">Iniciar Sesión</button>
+                <button @click="authMode = 'register'; authError = ''" :class="authMode === 'register' ? 'bg-white dark:bg-slate-700 shadow-sm text-brand-600 font-bold' : 'text-slate-500'" class="flex-1 py-2 text-sm rounded-md transition-all">Registrarse</button>
+            </div>
+
+            <form @submit.prevent="procesarAuth" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Usuario</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input v-model="authForm.username" type="text" required class="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Usuario">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Contraseña</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input v-model="authForm.password" type="password" required class="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div v-if="authError" class="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-200 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0"></i>
+                    <span>{{ authError }}</span>
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-bold py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 mt-2">
+                    <span v-if="isLoadingAuth" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span v-else>{{ authMode === 'login' ? 'Entrar al Sistema' : 'Crear Cuenta' }}</span>
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center text-xs text-slate-400 flex justify-center gap-4">
+                <button @click="toggleThemeMode" class="hover:text-slate-600 transition">
+                    <i class="fa-solid" :class="isDarkMode ? 'fa-sun' : 'fa-moon'"></i> Cambiar a modo {{ isDarkMode ? 'claro' : 'oscuro' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- APP PRINCIPAL FULL SCREEN -->
+        <div v-else :class="deviceSimulationClass" class="transition-all duration-500 flex flex-col hide-scrollbar relative">
+            
+            <div class="w-full flex-1 flex flex-col">
+                <!-- Header -->
+                <header class="flex gap-4 mb-8" :class="{'!flex-col !items-start': viewMode === 'mobile', 'flex-col md:flex-row justify-between items-start md:items-center': viewMode === 'desktop'}">
+                    <div>
+                        <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-700 to-brand-500 flex items-center gap-3 theme-transition pb-1" :class="{'text-2xl': viewMode === 'mobile'}">
+                            <i class="fa-solid fa-boxes-stacked text-brand-600"></i>
+                            Inventario de Equipos
+                        </h1>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-brand-700 dark:text-brand-300 text-xs font-bold uppercase tracking-wider theme-transition">
+                                <i class="fa-solid fa-user-check mr-1"></i> Hola, {{ loggedUsername }}
+                                <span v-if="loggedUsername === 'edu'" class="ml-1 text-yellow-500" title="Administrador"> Admin</span>
+                            </span>
+                            <span class="relative flex h-3 w-3 ml-2">
+                              <span :class="{'animate-ping bg-green-400': useFirebase && currentUser, 'bg-red-400': estadoBD.includes('Error')}" class="absolute inline-flex h-full w-full rounded-full opacity-75"></span>
+                              <span :class="{'bg-green-500': useFirebase && currentUser, 'bg-red-500': estadoBD.includes('Error')}" class="relative inline-flex rounded-full h-3 w-3"></span>
+                            </span>
+                            <span class="text-[11px] font-medium" :class="{'text-green-600': useFirebase && currentUser, 'text-red-600': estadoBD.includes('Error')}">
+                                {{ estadoBD }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2 sm:gap-3 items-center" :class="{'!w-full !justify-start mt-2': viewMode === 'mobile'}">
+                        
+                        <!-- BOTÓN INSTALAR APP PWA -->
+                        <button v-if="mostrarBotonInstalar" @click="instalarAplicacion" class="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500 text-white px-3 py-2 rounded-lg shadow-md transition-all font-bold flex items-center gap-2 text-sm animate-pulse border-2 border-white/20">
+                            <i class="fa-solid fa-download"></i> Instalar App
+                        </button>
+
+                        <button v-if="loggedUsername === 'edu'" @click="abrirPanelUsuarios" class="bg-amber-100 text-amber-700 px-3 py-2 rounded-lg shadow-sm hover:bg-amber-200 transition font-bold flex items-center gap-2 text-sm" title="Gestionar Usuarios Registrados">
+                            <i class="fa-solid fa-users-gear"></i> <span class="hidden sm:inline">Usuarios</span>
+                        </button>
+
+                        <div class="flex bg-slate-200 dark:bg-slate-700 rounded-lg p-1 shadow-inner h-10 items-center">
+                            <button @click="cambiarModoVista('mobile')" :class="viewMode === 'mobile' ? 'bg-white dark:bg-slate-600 shadow-sm text-brand-600' : 'text-slate-500'" class="w-8 h-8 rounded flex items-center justify-center transition" title="Modo Móvil">
+                                <i class="fa-solid fa-mobile-screen"></i>
+                            </button>
+                            <button @click="cambiarModoVista('desktop')" :class="viewMode === 'desktop' ? 'bg-white dark:bg-slate-600 shadow-sm text-brand-600' : 'text-slate-500'" class="w-8 h-8 rounded flex items-center justify-center transition" title="Modo Escritorio">
+                                <i class="fa-solid fa-desktop"></i>
+                            </button>
+                        </div>
+
+                        <button @click="toggleThemeMode" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 w-10 h-10 rounded-lg shadow-sm hover:bg-slate-50 transition flex items-center justify-center">
+                            <i class="fa-solid" :class="isDarkMode ? 'fa-sun text-yellow-400' : 'fa-moon text-slate-600'"></i>
+                        </button>
+
+                        <button @click="cerrarSesion" class="bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 w-10 h-10 rounded-lg shadow-sm hover:bg-red-50 transition flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        </button>
+
+                        <button v-show="viewMode === 'desktop'" @click="exportarCSV" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition font-medium flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-file-csv text-green-600"></i> Exportar
+                        </button>
+
+                        <button @click="abrirModal(null)" class="bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 text-white px-4 py-2 rounded-lg shadow-md transition-all font-bold flex items-center gap-2 text-sm" :class="{'!w-full justify-center mt-2 py-3': viewMode === 'mobile'}">
+                            <i class="fa-solid fa-plus"></i> Nuevo Equipo
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Dashboard / Resumen -->
+                <div class="flex flex-nowrap overflow-x-auto gap-4 mb-6 pb-2 hide-scrollbar items-stretch" :class="{'!flex-col': viewMode === 'mobile'}">
+                    
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 flex items-center gap-4 shrink-0" :class="viewMode === 'mobile' ? 'w-full' : 'min-w-[190px]'">
+                        <div class="bg-gradient-to-br from-brand-100 to-brand-200 text-brand-600 w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-inner shrink-0 theme-transition">
+                            <i class="fa-solid fa-server"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-bold uppercase tracking-wide">Total Activos</p>
+                            <p class="text-3xl font-black text-slate-800 dark:text-white mt-0.5">{{ totalEquipos }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Distribución por Estado -->
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 flex gap-4 shrink-0 items-center justify-between" :class="viewMode === 'mobile' ? 'w-full' : 'min-w-[280px]'">
+                        <div class="flex flex-col gap-2 w-full">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-green-500 text-[10px]"></i> Asignados</span>
+                                <span class="font-bold text-slate-800 dark:text-white">{{ resumenEstados['Activo'] || 0 }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-yellow-500 text-[10px]"></i> Bodega</span>
+                                <span class="font-bold text-slate-800 dark:text-white">{{ resumenEstados['Bodega'] || 0 }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-red-500 text-[10px]"></i> Reparación</span>
+                                <span class="font-bold text-slate-800 dark:text-white">{{ resumenEstados['Reparación'] || 0 }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Por Categoría -->
+                    <div class="flex flex-nowrap overflow-x-auto gap-4 hide-scrollbar" :class="{'w-full': viewMode === 'mobile'}">
+                        <div v-for="(total, cat) in resumenCategorias" :key="cat" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 flex items-center gap-3 shrink-0" :class="viewMode === 'mobile' ? 'flex-1' : 'min-w-[150px]'">
+                            <div class="bg-slate-100 dark:bg-slate-900/50 text-slate-500 w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0">
+                                <i :class="getIconoCategoria(cat)"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] text-slate-500 font-bold uppercase truncate" :title="cat">{{ cat }}</p>
+                                <div class="flex items-baseline gap-1 mt-0.5">
+                                    <p class="text-2xl font-bold text-slate-800 dark:text-white">{{ total }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Filtros y Ordenamiento -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-6 flex gap-4 items-center justify-between dark-transition" :class="{'!flex-col !items-stretch': viewMode !== 'desktop', 'flex-col md:flex-row': viewMode === 'desktop'}">
+                    <div class="flex gap-4 w-full md:w-auto" :class="{'!flex-col': viewMode === 'mobile', 'flex-col sm:flex-row': viewMode !== 'mobile'}">
+                        
+                        <div class="relative w-full flex gap-2" :class="viewMode === 'desktop' ? 'sm:w-80' : ''">
+                            <div class="relative flex-grow">
+                                <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-400"></i>
+                                <input v-model="filtroBusqueda" type="text" placeholder="S/N, ID, Asignado, Marca..." class="pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full theme-transition">
+                            </div>
+                            <!-- Botón Escáner Barcode -->
+                            <button @click="iniciarEscaner('busqueda')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-white px-3 rounded-lg transition" title="Escanear Código de Barras">
+                                <i class="fa-solid fa-barcode"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Filtro Real por Estado -->
+                        <select v-model="filtroEstado" class="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-auto font-medium theme-transition">
+                            <option value="Todos">Todos los Estados</option>
+                            <option value="Activo">Activo (Asignado)</option>
+                            <option value="Bodega">En Bodega</option>
+                            <option value="Reparación">En Reparación</option>
+                            <option value="Baja">Dado de Baja</option>
+                        </select>
+                        
+                        <!-- SELECTOR DE VISTA Y ORDENAMIENTO -->
+                        <select v-model="modoVista" class="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-auto font-medium theme-transition">
+                            <option value="grupo_estado">Agrupar por Estado</option>
+                            <option value="grupo_asignado_ubicacion">Agrupar por Asignado A / Ubicación</option>
+                            <option value="az">Ordenar: A - Z</option>
+                            <option value="za">Ordenar: Z - A</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tabla Principal -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden dark-transition flex-1">
+                    <div class="overflow-x-auto hide-scrollbar h-full">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 uppercase text-xs font-semibold sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-5 py-4">ID</th>
+                                    <th class="px-5 py-4">Categoría</th>
+                                    <th class="px-5 py-4">Marca y Modelo</th>
+                                    <th class="px-5 py-4">Número de Serie</th>
+                                    <th class="px-5 py-4">Estado</th>
+                                    <th class="px-5 py-4">Asignado A / Ubicación</th>
+                                    <th class="px-5 py-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                
+                                <!-- VISTAS AGRUPADAS DINÁMICAS -->
+                                <template v-if="modoVista.startsWith('grupo_')">
+                                    <template v-for="(equipos, grupoNombre) in equiposAgrupados" :key="grupoNombre">
+                                        <!-- Fila Cabecera de Grupo -->
+                                        <tr class="bg-slate-100/80 dark:bg-slate-700/60 border-y border-slate-200 dark:border-slate-600">
+                                            <td colspan="7" class="px-5 py-3 text-brand-700 dark:text-brand-300 font-bold uppercase tracking-wider text-xs">
+                                                <i class="fa-solid mr-2" :class="{
+                                                    'fa-user-tag': modoVista === 'grupo_asignado_ubicacion',
+                                                    'fa-circle-half-stroke': modoVista === 'grupo_estado'
+                                                }"></i> 
+                                                {{ grupoNombre }} 
+                                                <span class="ml-3 bg-brand-200 dark:bg-brand-800 text-brand-800 dark:text-brand-200 px-2.5 py-1 rounded-md text-[10px]">{{ equipos.length }} Equipos</span>
+                                            </td>
+                                        </tr>
+                                        <!-- Filas de equipos pertenecientes a ese grupo -->
+                                        <tr v-for="item in equipos" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition bg-white dark:bg-slate-800">
+                                            <td class="px-5 py-4 font-bold text-slate-800 dark:text-slate-100 pl-8"> <!-- Indentado ligero -->
+                                                <button @click="abrirDetalle(item)" class="hover:text-brand-600 transition-colors text-left flex items-center gap-2 group w-full">
+                                                    <i class="fa-solid fa-tag text-slate-400 group-hover:text-brand-500 text-xs"></i>
+                                                    <span class="group-hover:underline decoration-brand-500 underline-offset-4">{{ item.assetTag }}</span>
+                                                </button>
+                                            </td>
+                                            <td class="px-5 py-4 text-slate-700 dark:text-slate-300">
+                                                <i :class="getIconoCategoria(item.categoria)" class="mr-1 text-slate-400"></i> {{ item.categoria }}
+                                            </td>
+                                            <td class="px-5 py-4">
+                                                <div class="font-bold text-slate-800 dark:text-slate-200">{{ item.marca }}</div>
+                                                <div class="text-xs text-slate-500">{{ item.modelo }}</div>
+                                            </td>
+                                            <td class="px-5 py-4 font-mono text-xs text-slate-600 dark:text-slate-400">{{ item.serialNumber }}</td>
+                                            <td class="px-5 py-4">
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-bold border" :class="getColorBadgeEstado(item.estado)">
+                                                    {{ item.estado }}
+                                                </span>
+                                            </td>
+                                            <td class="px-5 py-4">
+                                                <div class="font-medium text-slate-800 dark:text-slate-200">{{ item.asignadoA || 'N/A' }}</div>
+                                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" v-if="item.departamento || item.ubicacion">
+                                                    <span v-if="item.departamento" class="mr-2"><i class="fa-solid fa-building mr-1"></i>{{ item.departamento }}</span>
+                                                    <span v-if="item.ubicacion"><i class="fa-solid fa-location-dot mr-1"></i>{{ item.ubicacion }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-5 py-4 text-center">
+                                                <button @click="abrirModal(item)" class="text-brand-600 hover:text-brand-800 p-2 mx-1 rounded bg-brand-50 hover:bg-brand-100 transition" title="Editar Equipo">
+                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                </button>
+                                                <button @click="eliminarRegistro(item.id)" class="text-red-600 hover:text-red-800 p-2 mx-1 rounded bg-red-50 hover:bg-red-100 transition" title="Eliminar">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </template>
+
+                                <!-- VISTA LISTA PLANA ORDENADA -->
+                                <template v-else>
+                                    <tr v-for="item in equiposFiltrados" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                                        <td class="px-5 py-4 font-bold text-slate-800 dark:text-slate-100">
+                                            <button @click="abrirDetalle(item)" class="hover:text-brand-600 transition-colors text-left flex items-center gap-2 group w-full">
+                                                <i class="fa-solid fa-tag text-slate-400 group-hover:text-brand-500 text-xs"></i>
+                                                <span class="group-hover:underline decoration-brand-500 underline-offset-4">{{ item.assetTag }}</span>
+                                            </button>
+                                        </td>
+                                        <td class="px-5 py-4 text-slate-700 dark:text-slate-300">
+                                            <i :class="getIconoCategoria(item.categoria)" class="mr-1 text-slate-400"></i> {{ item.categoria }}
+                                        </td>
+                                        <td class="px-5 py-4">
+                                            <div class="font-bold text-slate-800 dark:text-slate-200">{{ item.marca }}</div>
+                                            <div class="text-xs text-slate-500">{{ item.modelo }}</div>
+                                        </td>
+                                        <td class="px-5 py-4 font-mono text-xs text-slate-600 dark:text-slate-400">{{ item.serialNumber }}</td>
+                                        <td class="px-5 py-4">
+                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold border" :class="getColorBadgeEstado(item.estado)">
+                                                {{ item.estado }}
+                                            </span>
+                                        </td>
+                                        <td class="px-5 py-4">
+                                            <div class="font-medium text-slate-800 dark:text-slate-200">{{ item.asignadoA || 'N/A' }}</div>
+                                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                <span v-if="item.departamento" class="mr-2"><i class="fa-solid fa-building mr-1"></i>{{ item.departamento }}</span>
+                                                <span v-if="item.ubicacion"><i class="fa-solid fa-location-dot mr-1"></i>{{ item.ubicacion }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-4 text-center">
+                                            <button @click="abrirModal(item)" class="text-brand-600 hover:text-brand-800 p-2 mx-1 rounded bg-brand-50 hover:bg-brand-100 transition" title="Editar Equipo">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button @click="eliminarRegistro(item.id)" class="text-red-600 hover:text-red-800 p-2 mx-1 rounded bg-red-50 hover:bg-red-100 transition" title="Eliminar">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+
+                                <!-- MENSAJE VACÍO -->
+                                <tr v-if="equiposFiltrados.length === 0">
+                                    <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                                        <i class="fa-solid fa-boxes-stacked text-4xl mb-3 text-slate-300"></i>
+                                        <p>No se encontraron equipos en el inventario.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Panel Usuarios -->
+        <div v-if="modalUsuariosAbierto && loggedUsername === 'edu'" class="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 flex items-center justify-center z-[60] p-4 overflow-y-auto">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl overflow-hidden my-8 dark-transition border border-transparent dark:border-slate-700">
+                <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/30">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-users-gear text-amber-600 dark:text-amber-500"></i>
+                            Panel de Administrador: Usuarios
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Supervisa quién está conectado y gestiona los accesos.</p>
+                    </div>
+                    <button @click="cerrarPanelUsuarios" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="p-0 overflow-x-auto hide-scrollbar">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 uppercase text-xs font-semibold">
+                            <tr>
+                                <th class="px-6 py-4">Usuario</th>
+                                <th class="px-6 py-4">Rol</th>
+                                <th class="px-6 py-4">Estado / Actividad</th>
+                                <th class="px-6 py-4 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                            <tr v-for="user in listaUsuarios" :key="user.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                                <td class="px-6 py-4 font-bold text-slate-800 dark:text-slate-100">
+                                    {{ user.username }}
+                                    <span v-if="user.role === 'admin'" class="ml-2 text-yellow-500" title="Administrador del Sistema"><i class="fa-solid fa-crown"></i></span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-400">
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-semibold" :class="user.role === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 uppercase'">
+                                        {{ user.role === 'admin' ? 'Admin' : 'Estándar' }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div v-if="user.banned" class="text-red-500 font-bold flex items-center gap-2">
+                                        <i class="fa-solid fa-ban"></i> Cuenta Bloqueada
+                                    </div>
+                                    <div v-else class="flex items-center gap-2 font-medium" :class="user.isOnline ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'">
+                                        <i class="fa-solid" :class="user.isOnline ? 'fa-circle text-[10px] animate-pulse' : 'fa-circle-dot text-[10px]'"></i>
+                                        {{ user.isOnline ? 'En Línea' : 'Desconectado' }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-center flex items-center justify-center gap-2">
+                                    <button v-if="user.role !== 'admin'" @click="toggleBanUsuario(user)" class="px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border" :class="user.banned ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800'">
+                                        <i class="fa-solid" :class="user.banned ? 'fa-unlock' : 'fa-lock'"></i> {{ user.banned ? 'Desbloquear' : 'Bloquear' }}
+                                    </button>
+                                    <button v-if="user.role !== 'admin'" @click="eliminarPerfilUsuario(user.id)" class="px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 border bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800" title="Eliminar registro">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr v-if="listaUsuarios.length === 0">
+                                <td colspan="4" class="px-6 py-8 text-center text-slate-500">Cargando usuarios...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end">
+                    <button @click="cerrarPanelUsuarios" class="px-6 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 transition font-medium">
+                        Cerrar Panel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NUEVO: Modal Informe Detallado Ficha Técnica -->
+        <div v-if="modalInformeAbierto && informeActual" class="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 flex items-center justify-center z-[60] p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden my-auto dark-transition border border-transparent dark:border-slate-700 flex flex-col max-h-[90vh]">
+                
+                <!-- Header del Informe -->
+                <div class="flex justify-between items-start px-6 py-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+                            <i :class="getIconoCategoria(informeActual.categoria)" class="text-brand-600 dark:text-brand-400"></i>
+                            {{ informeActual.assetTag }}
+                        </h3>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{{ informeActual.marca }} {{ informeActual.modelo || '' }}</p>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <button @click="cerrarInforme" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold border mt-1" :class="getColorBadgeEstado(informeActual.estado)">{{ informeActual.estado }}</span>
+                    </div>
+                </div>
+
+                <!-- Body del Informe -->
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+                    <!-- Info General -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Asignación -->
+                        <div class="bg-slate-100/50 dark:bg-slate-900/30 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                            <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-user-tag"></i> Ubicación y Asignación</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><span class="font-medium text-slate-500">Asignado a:</span> <span class="font-bold text-slate-800 dark:text-slate-200">{{ informeActual.asignadoA || 'N/A' }}</span></p>
+                                <p><span class="font-medium text-slate-500">Departamento:</span> <span class="text-slate-800 dark:text-slate-200">{{ informeActual.departamento || 'N/A' }}</span></p>
+                                <p><span class="font-medium text-slate-500">Oficina:</span> <span class="text-slate-800 dark:text-slate-200">{{ informeActual.ubicacion || 'N/A' }}</span></p>
+                            </div>
+                        </div>
+                        <!-- Detalles del equipo -->
+                        <div class="bg-slate-100/50 dark:bg-slate-900/30 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                            <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-circle-info"></i> Detalles Generales</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><span class="font-medium text-slate-500">Categoría:</span> <span class="text-slate-800 dark:text-slate-200">{{ informeActual.categoria }}</span></p>
+                                <p><span class="font-medium text-slate-500">Número de Serie:</span> <span class="font-mono text-slate-800 dark:text-slate-200">{{ informeActual.serialNumber }}</span></p>
+                                <p><span class="font-medium text-slate-500">Fecha de Registro:</span> <span class="text-slate-800 dark:text-slate-200">{{ informeActual.fecha || 'N/A' }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hardware & Red (Si es PC/Laptop) -->
+                    <div v-if="informeActual.categoria === 'Laptop' || informeActual.categoria === 'Desktop'" class="bg-slate-100/50 dark:bg-slate-900/30 rounded-lg p-5 border border-slate-200 dark:border-slate-700">
+                         <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2 flex items-center gap-2"><i class="fa-solid fa-microchip"></i> Especificaciones Técnicas y Red</h4>
+                         <div class="grid grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-4 text-sm">
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">Procesador</span><span class="font-medium text-slate-800 dark:text-slate-200">{{ informeActual.procesador || '-' }}</span></div>
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">Memoria RAM</span><span class="font-medium text-slate-800 dark:text-slate-200">{{ informeActual.ram || '-' }}</span></div>
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">Almacenamiento</span><span class="font-medium text-slate-800 dark:text-slate-200">{{ informeActual.hdd || '-' }}</span></div>
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">S.O.</span><span class="font-medium text-slate-800 dark:text-slate-200">{{ informeActual.so || '-' }}</span></div>
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">Hostname</span><span class="font-mono font-medium text-slate-800 dark:text-slate-200">{{ informeActual.hostname || '-' }}</span></div>
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">Dirección IP</span><span class="font-mono font-medium text-slate-800 dark:text-slate-200">{{ informeActual.ip || '-' }}</span></div>
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">Dirección MAC</span><span class="font-mono font-medium text-slate-800 dark:text-slate-200">{{ informeActual.mac || '-' }}</span></div>
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">ID TeamViewer</span><span class="font-medium text-slate-800 dark:text-slate-200">{{ informeActual.idTeamviewer || '-' }}</span></div>
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">VPN</span><span class="font-medium text-slate-800 dark:text-slate-200">{{ informeActual.vpn || '-' }}</span></div>
+                             <div><span class="block text-[10px] text-slate-500 uppercase font-bold">Estación</span><span class="font-medium text-slate-800 dark:text-slate-200">{{ informeActual.estacion || '-' }}</span></div>
+                             <div class="col-span-2"><span class="block text-[10px] text-slate-500 uppercase font-bold">Licencia</span><span class="font-mono text-xs text-slate-800 dark:text-slate-200">{{ informeActual.licencia || '-' }}</span></div>
+                         </div>
+                    </div>
+
+                    <!-- UPS -->
+                    <div v-if="informeActual.categoria === 'UPS'" class="bg-slate-100/50 dark:bg-slate-900/30 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                         <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-car-battery"></i> Especificaciones UPS</h4>
+                         <p class="text-sm"><span class="font-medium text-slate-500">Capacidad KVA:</span> <span class="font-bold text-slate-800 dark:text-slate-200">{{ informeActual.capacidadKva || '-' }}</span></p>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Observaciones / Notas</h4>
+                        <div class="bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-400 dark:border-yellow-600 p-4 rounded-r-lg text-slate-700 dark:text-slate-300 italic min-h-[3.5rem] text-sm">
+                            {{ informeActual.notas || 'Sin observaciones registradas.' }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer del Informe -->
+                <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end shrink-0">
+                    <button @click="cerrarInforme" class="px-6 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 transition font-medium w-full sm:w-auto">
+                        Cerrar Ficha Técnica
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Formulario de Equipo (CORREGIDO PARA EVITAR DUPLICIDAD DE COLUMNA DERECHA) -->
+        <div v-if="modalAbierto && isLoggedIn" class="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 flex items-center justify-center z-50 p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full flex flex-col max-h-[95vh] overflow-hidden my-auto dark-transition border border-transparent dark:border-slate-700" :class="viewMode === 'mobile' ? 'max-w-md' : 'max-w-3xl'">
+                <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">
+                        {{ editando ? 'Editar Equipo' : 'Registrar Nuevo Equipo' }}
+                    </h3>
+                    <button @click="cerrarModal" class="text-slate-400 hover:text-slate-600 transition">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                
+                <form @submit.prevent="guardarRegistro" class="flex flex-col flex-1 overflow-hidden">
+                    <div class="p-6 overflow-y-auto custom-scrollbar">
+                        <div class="grid gap-5" :class="viewMode === 'mobile' ? '!grid-cols-1' : 'grid-cols-1 md:grid-cols-2'">
+                            
+                            <!-- COLUMNA IZQUIERDA -->
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ID *</label>
+                                    <div class="relative">
+                                        <input v-model="formulario.assetTag" type="text" required class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg pl-3 pr-10 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 1, 2, 3...">
+                                        <button type="button" @click="iniciarEscaner('assetTag')" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-brand-500 hover:text-brand-700 transition" title="Escanear con Cámara"><i class="fa-solid fa-barcode"></i></button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Número de Serie (S/N) *</label>
+                                    <div class="relative">
+                                        <input v-model="formulario.serialNumber" type="text" required class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg pl-3 pr-10 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. PF1QK2...">
+                                        <button type="button" @click="iniciarEscaner('serialNumber')" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-brand-500 hover:text-brand-700 transition" title="Escanear con Cámara"><i class="fa-solid fa-barcode"></i></button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Marca *</label>
+                                        <input v-model="formulario.marca" type="text" required class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. Dell, HP">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Modelo</label>
+                                        <input v-model="formulario.modelo" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. Latitude 5420">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Categoría *</label>
+                                    <select v-model="formulario.categoria" required class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                                        <option value="Laptop">Laptop / Portátil</option>
+                                        <option value="Desktop">Desktop / PC</option>
+                                        <option value="Monitor">Monitor</option>
+                                        <option value="Servidor">Servidor</option>
+                                        <option value="Impresora">Impresora</option>
+                                        <option value="Networking">Networking (Switch, Router)</option>
+                                        <option value="Periférico">Periférico (Teclado, Mouse)</option>
+                                        <option value="UPS">UPS</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </div>
+                            </div> <!-- Cierre correcto de Columna Izquierda -->
+
+                            <!-- COLUMNA DERECHA -->
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Estado del Equipo *</label>
+                                    <select v-model="formulario.estado" required class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none font-medium" :class="getColorTextEstado(formulario.estado)">
+                                        <option value="Activo">🟢 Activo (Asignado)</option>
+                                        <option value="Bodega">🟡 En Bodega (Disponible)</option>
+                                        <option value="Reparación">🟠 En Reparación</option>
+                                        <option value="Baja">⚫ Dado de Baja</option>
+                                    </select>
+                                </div>
+                                <div v-if="formulario.estado === 'Activo'">
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Asignado a (Usuario/Empleado)</label>
+                                    <input v-model="formulario.asignadoA" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Nombre del empleado">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Departamento / Área</label>
+                                    <input v-model="formulario.departamento" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. TI, Recursos Humanos, Ventas">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación / Oficina</label>
+                                    <!-- Si es la misma oficina, pon el mismo nombre aquí para que se agrupen centralizados -->
+                                    <input v-model="formulario.ubicacion" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. Piso 4, Oficina HR">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
+                                    <input v-model="formulario.fecha" type="date" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                                </div>
+                            </div>
+                        </div> <!-- Cierre del Grid Principal de 2 Columnas -->
+
+                        <!-- CAMPOS CONDICIONALES: PC / LAPTOP ACTIVO (Debajo de ambas columnas) -->
+                        <div v-if="(formulario.categoria === 'Laptop' || formulario.categoria === 'Desktop') && formulario.estado === 'Activo'" class="col-span-1 md:col-span-2 p-5 bg-slate-100 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 mt-5">
+                            <h4 class="text-sm font-bold text-brand-600 dark:text-brand-400 mb-4 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                <i class="fa-solid fa-microchip"></i> Especificaciones y Red (Equipo Activo)
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Procesador</label>
+                                    <input v-model="formulario.procesador" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. Intel Core i5">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">RAM</label>
+                                    <input v-model="formulario.ram" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 16GB">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">HDD / SSD</label>
+                                    <input v-model="formulario.hdd" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 512GB SSD">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Hostname</label>
+                                    <input v-model="formulario.hostname" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. PC-CONTABILIDAD">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">ID TeamViewer</label>
+                                    <input v-model="formulario.idTeamviewer" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 123 456 789">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Sistema Operativo</label>
+                                    <input v-model="formulario.so" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. Windows 11 Pro">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Licencia (Opcional)</label>
+                                    <input v-model="formulario.licencia" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Clave de Licencia">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Dirección IP</label>
+                                    <input v-model="formulario.ip" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 192.168.1.50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Dirección MAC</label>
+                                    <input v-model="formulario.mac" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 00:1A:2B:3C:4D:5E">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Estación</label>
+                                    <input v-model="formulario.estacion" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. Estación 05">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">VPN</label>
+                                    <input v-model="formulario.vpn" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. Activa / Sin Configurar">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CAMPOS CONDICIONALES: UPS (Debajo de ambas columnas) -->
+                        <div v-if="formulario.categoria === 'UPS'" class="col-span-1 md:col-span-2 p-5 bg-slate-100 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 mt-5">
+                            <h4 class="text-sm font-bold text-brand-600 dark:text-brand-400 mb-4 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                <i class="fa-solid fa-car-battery"></i> Especificaciones UPS
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Capacidad de KVA</label>
+                                    <input v-model="formulario.capacidadKva" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 1.5 KVA, 3 KVA">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OBSERVACIONES FINALES (Ocupa todo el ancho) -->
+                        <div class="col-span-1 md:col-span-2 mt-5">
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notas / Observaciones</label>
+                            <textarea v-model="formulario.notas" rows="2" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Detalles de reparaciones, características adicionales..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 shrink-0" :class="viewMode === 'mobile' ? 'flex-col-reverse' : 'justify-end'">
+                        <button type="button" @click="cerrarModal" class="px-5 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition font-medium" :class="{'w-full': viewMode === 'mobile'}">Cancelar</button>
+                        <button type="submit" class="px-5 py-2 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 text-white transition-all font-bold flex items-center justify-center gap-2" :class="{'w-full': viewMode === 'mobile'}">
+                            <i class="fa-solid fa-floppy-disk"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL DE CÁMARA PARA ESCÁNER -->
+        <div v-if="scannerActive" class="fixed inset-0 bg-slate-900/95 flex flex-col items-center justify-center z-[70] p-4 backdrop-blur-sm">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700">
+                <div class="p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                    <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-camera text-brand-500"></i> Escáner de Código
+                    </h3>
+                    <button @click="detenerEscaner" class="text-slate-400 hover:text-red-500 transition">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="bg-black w-full flex justify-center items-center relative min-h-[300px]">
+                    <!-- Contenedor donde la librería inyectará el video de la cámara -->
+                    <div id="reader" class="w-full"></div>
+                </div>
+                
+                <div class="p-4 text-center bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
+                    <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Apunta la cámara al código de barras o QR para escanear.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script principal -->
+    <script type="module">
+        import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración de Firebase para Inventario TI (Tus credenciales verdaderas de inventario)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBN5DXH8mBza-kyXhBo3vdhUFeE1Wyo7qc",
+            authDomain: "inventarioti-3e796.firebaseapp.com",
+            projectId: "inventarioti-3e796",
+            storageBucket: "inventarioti-3e796.firebasestorage.app",
+            messagingSenderId: "463408953862",
+            appId: "1:463408953862:web:4656af6a53f13a69332187"
+        };
+        
+        const appId = firebaseConfig.projectId; 
+        const useFirebase = true;
+
+        let appFirebase, auth, db;
+        if (useFirebase) {
+            appFirebase = initializeApp(firebaseConfig);
+            auth = getAuth(appFirebase);
+            db = getFirestore(appFirebase);
+        }
+
+        createApp({
+            data() {
+                return {
+                    useFirebase: useFirebase,
+                    estadoBD: 'Conectando...',
+                    
+                    isCheckingAuth: true, 
+                    isLoggedIn: false,
+                    currentUser: null,
+                    loggedUsername: '',
+                    authMode: 'login', 
+                    isLoadingAuth: false,
+                    authError: '',
+                    authForm: { username: '', password: '' },
+                    
+                    modalUsuariosAbierto: false,
+                    listaUsuarios: [],
+                    unsubscribeUsuarios: null,
+
+                    isDarkMode: false, 
+                    mostrarBotonInstalar: false, // Variable para controlar botón de PWA
+                    viewMode: 'desktop',
+                    mostrarMenuTemas: false,
+                    temaActual: 'blue',
+                    paletaTemas: [
+                        { id: 'blue', nombre: 'Azul Océano', bgClass: 'bg-sky-500' },
+                        { id: 'green', nombre: 'Verde Informática', bgClass: 'bg-emerald-500' },
+                        { id: 'purple', nombre: 'Púrpura Cósmico', bgClass: 'bg-violet-500' },
+                        { id: 'orange', nombre: 'Naranja Fuego', bgClass: 'bg-amber-500' },
+                        { id: 'rose', nombre: 'Rosa Neón', bgClass: 'bg-rose-500' }
+                    ],
+
+                    filtroBusqueda: '',
+                    filtroEstado: 'Todos',
+                    modoVista: 'az', // POR DEFECTO: Ordenado de la A-Z
+                    
+                    inventario: [], 
+                    
+                    modalAbierto: false,
+                    editando: false,
+                    formulario: this.generarFormularioVacio(),
+
+                    // Variables para el Informe Detallado
+                    modalInformeAbierto: false,
+                    informeActual: null,
+
+                    // VARIABLES DEL ESCÁNER DE CÁMARA
+                    scannerActive: false,
+                    scannerTarget: '', 
+                    html5QrcodeScanner: null
+                }
+            },
+            computed: {
+                deviceSimulationClass() {
+                    // Expansión total en escritorio sin márgenes artificiales
+                    if (this.viewMode === 'desktop') return 'w-full flex-1 px-4 sm:px-6 lg:px-8 py-6';
+                    // Modo celular:
+                    if (this.viewMode === 'mobile') return 'w-full max-w-[390px] m-auto sm:border-[14px] border-slate-800 dark:border-slate-700 sm:rounded-[2.5rem] sm:h-[85vh] overflow-y-auto px-4 py-6 shadow-2xl bg-slate-50 dark:bg-slate-900';
+                },
+                equiposFiltrados() {
+                    let resultado = [...this.inventario];
+
+                    if (this.filtroEstado !== 'Todos') {
+                        resultado = resultado.filter(eq => eq.estado === this.filtroEstado);
+                    }
+
+                    if (this.filtroBusqueda.trim() !== '') {
+                        const busqueda = this.filtroBusqueda.toLowerCase();
+                        resultado = resultado.filter(eq => 
+                            (eq.assetTag && eq.assetTag.toLowerCase().includes(busqueda)) ||
+                            (eq.serialNumber && eq.serialNumber.toLowerCase().includes(busqueda)) ||
+                            (eq.marca && eq.marca.toLowerCase().includes(busqueda)) ||
+                            (eq.asignadoA && eq.asignadoA.toLowerCase().includes(busqueda)) ||
+                            (eq.ubicacion && eq.ubicacion.toLowerCase().includes(busqueda))
+                        );
+                    }
+
+                    // APLICAR ORDENAMIENTO (Si no está en modo agrupar)
+                    if (this.modoVista === 'az') {
+                        resultado.sort((a, b) => (a.assetTag || '').localeCompare(b.assetTag || '', undefined, {numeric: true}));
+                    } else if (this.modoVista === 'za') {
+                        resultado.sort((a, b) => (b.assetTag || '').localeCompare(a.assetTag || '', undefined, {numeric: true}));
+                    }
+
+                    return resultado;
+                },
+                
+                // NUEVO: Agrupa los equipos de forma dinámica según la selección del filtro
+                equiposAgrupados() {
+                    const grupos = {};
+                    
+                    this.equiposFiltrados.forEach(eq => {
+                        let valor = 'Sin Asignar / N/A';
+                        
+                        if (this.modoVista === 'grupo_estado') {
+                            valor = eq.estado || 'Sin Estado';
+                        } else if (this.modoVista === 'grupo_asignado_ubicacion') {
+                            const asig = eq.asignadoA ? eq.asignadoA.trim() : '';
+                            const ubi = eq.ubicacion ? eq.ubicacion.trim() : '';
+                            valor = [asig, ubi].filter(Boolean).join(' / ') || 'Sin Asignar / N/A';
+                        }
+
+                        if (!grupos[valor]) grupos[valor] = [];
+                        grupos[valor].push(eq);
+                    });
+                    
+                    // Ordenar alfabéticamente por el nombre del grupo creado
+                    return Object.keys(grupos).sort().reduce((acc, key) => {
+                        acc[key] = grupos[key];
+                        return acc;
+                    }, {});
+                },
+
+                totalEquipos() { return this.inventario.length; },
+                resumenEstados() {
+                    return this.inventario.reduce((acc, eq) => {
+                        acc[eq.estado] = (acc[eq.estado] || 0) + 1;
+                        return acc;
+                    }, {});
+                },
+                resumenCategorias() {
+                    return this.inventario.reduce((acc, eq) => {
+                        acc[eq.categoria] = (acc[eq.categoria] || 0) + 1;
+                        return acc;
+                    }, {});
+                }
+            },
+            mounted() {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    this.isDarkMode = true;
+                    document.documentElement.classList.add('dark');
+                }
+
+                const savedColorTheme = localStorage.getItem('app_color_theme');
+                if (savedColorTheme) this.cambiarColorTema(savedColorTheme, false);
+
+                if (window.innerWidth <= 640) this.viewMode = 'mobile';
+
+                window.addEventListener("beforeunload", () => {
+                    if (this.currentUser) {
+                        const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_users', this.currentUser.uid);
+                        setDoc(userRef, { isOnline: false }, { merge: true }).catch(()=>{});
+                    }
+                });
+
+                if (this.useFirebase) this.iniciarAuth();
+                
+                // Inicializar Configuración PWA
+                this.configurarPWA();
+            },
+            methods: {
+                cambiarColorTema(temaId, guardar = true) {
+                    this.temaActual = temaId;
+                    document.documentElement.setAttribute('data-theme', temaId);
+                    if (guardar) {
+                        localStorage.setItem('app_color_theme', temaId);
+                        this.mostrarMenuTemas = false;
+                    }
+                    this.configurarPWA(); // Refrescar color PWA
+                },
+                toggleThemeMode() {
+                    this.isDarkMode = !this.isDarkMode;
+                    if (this.isDarkMode) {
+                        document.documentElement.classList.add('dark');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        localStorage.setItem('theme', 'light');
+                    }
+                    this.configurarPWA(); // Refrescar color PWA
+                },
+                
+                // --- PWA MÉTODOS ---
+                configurarPWA() {
+                    if (window.isAppInstallable) {
+                        this.mostrarBotonInstalar = true;
+                    }
+                    window.addEventListener('pwa-installable', () => {
+                        this.mostrarBotonInstalar = true;
+                    });
+                    
+                    const rootStyles = getComputedStyle(document.documentElement);
+                    let currentColorHex = rootStyles.getPropertyValue('--brand-500').trim() || '#0ea5e9';
+                    
+                    const metaThemeColor = document.getElementById('meta-theme-color');
+                    if (metaThemeColor) metaThemeColor.content = currentColorHex;
+
+                    // SVG de una caja/servidor para el ícono de la app
+                    const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="${currentColorHex}"/><path d="M256 48L48 160v192l208 112 208-112V160L256 48zm0 57.3L392 180l-136 74.7L120 180l136-74.7zM96 208.6l136 74.7v156.4L96 364.3V208.6zm184 231.1V283.3l136-74.7v155.7L280 439.7z" fill="#ffffff"/></svg>`;
+                    const iconB64 = btoa(iconSvg);
+                    
+                    const manifest = {
+                        name: "Inventario de Equipo TI",
+                        short_name: "Inventario TI",
+                        description: "Gestión de activos tecnológicos",
+                        start_url: window.location.href.split('?')[0],
+                        display: "standalone",
+                        background_color: this.isDarkMode ? "#0f172a" : "#f8fafc",
+                        theme_color: currentColorHex,
+                        icons: [{
+                            src: "data:image/svg+xml;base64," + iconB64,
+                            sizes: "512x512",
+                            type: "image/svg+xml",
+                            purpose: "any maskable"
+                        }]
+                    };
+                    
+                    const manifestString = JSON.stringify(manifest);
+                    const manifestLink = document.getElementById('manifest-link');
+                    if (manifestLink) {
+                        manifestLink.href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(manifestString);
+                    }
+                },
+                async instalarAplicacion() {
+                    if (!window.deferredPrompt) {
+                        alert("Tu navegador no soporta la instalación directa o ya la has instalado. Intenta desde las opciones de tu navegador ('Añadir a la pantalla de inicio').");
+                        return;
+                    }
+                    window.deferredPrompt.prompt();
+                    const { outcome } = await window.deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        this.mostrarBotonInstalar = false;
+                    }
+                    window.deferredPrompt = null;
+                },
+                // -------------------
+
+                async procesarAuth() {
+                    this.authError = '';
+                    this.isLoadingAuth = true;
+                    const userStr = this.authForm.username.trim().toLowerCase();
+                    const pass = this.authForm.password;
+                    const email = userStr + '@inventarioti.local';
+
+                    if (!userStr || !pass) {
+                        this.authError = 'Por favor completa usuario y contraseña.';
+                        this.isLoadingAuth = false;
+                        return;
+                    }
+
+                    try {
+                        let userCredential;
+                        if (this.authMode === 'login') {
+                            userCredential = await signInWithEmailAndPassword(auth, email, pass);
+                            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_users', userCredential.user.uid);
+                            await setDoc(userRef, { isOnline: true, lastActive: Date.now() }, { merge: true });
+                        } else {
+                            userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_users', userCredential.user.uid);
+                            await setDoc(userRef, {
+                                username: userStr,
+                                role: 'user', 
+                                isOnline: true,
+                                banned: false,
+                                lastActive: Date.now()
+                            });
+                        }
+                    } catch (error) {
+                        if (this.authMode === 'login' && userStr === 'edu' && pass === '183090') {
+                            try {
+                                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_users', userCredential.user.uid);
+                                await setDoc(userRef, {
+                                    username: 'edu',
+                                    role: 'admin',
+                                    isOnline: true,
+                                    banned: false,
+                                    lastActive: Date.now()
+                                });
+                                this.isLoadingAuth = false;
+                                return; 
+                            } catch(e) { 
+                                console.error(e); 
+                            }
+                        }
+
+                        console.error("Error Auth:", error.code);
+                        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                            this.authError = 'Usuario o contraseña incorrectos.';
+                        } else if (error.code === 'auth/email-already-in-use') {
+                            this.authError = 'Ese usuario ya existe. Ve a Iniciar Sesión.';
+                        } else if (error.code === 'auth/weak-password') {
+                            this.authError = 'La contraseña debe tener al menos 6 caracteres.';
+                        } else {
+                            this.authError = 'Ocurrió un error. Intenta de nuevo.';
+                        }
+                    }
+                    this.isLoadingAuth = false;
+                },
+                async cerrarSesion() {
+                    if (this.currentUser) {
+                        const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_users', this.currentUser.uid);
+                        await setDoc(userRef, { isOnline: false }, { merge: true });
+                    }
+                    await signOut(auth);
+                    this.authForm.password = ''; 
+                },
+                iniciarAuth() {
+                    onAuthStateChanged(auth, (user) => {
+                        this.isCheckingAuth = false; 
+                        if (user) {
+                            this.isLoggedIn = true;
+                            this.currentUser = user;
+                            this.loggedUsername = user.email.split('@')[0]; 
+                            this.estadoBD = 'Conectado';
+                            
+                            const myUserRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_users', user.uid);
+                            
+                            onSnapshot(myUserRef, (docSnap) => {
+                                if (docSnap.exists()) {
+                                    if (docSnap.data().banned && this.loggedUsername !== 'edu') {
+                                        alert("Tu acceso ha sido bloqueado por el administrador del sistema.");
+                                        this.cerrarSesion();
+                                    }
+                                }
+                            });
+
+                            setDoc(myUserRef, { isOnline: true, lastActive: Date.now() }, { merge: true });
+
+                            this.escucharInventario(); 
+                        } else {
+                            this.isLoggedIn = false;
+                            this.currentUser = null;
+                            this.inventario = []; 
+                            if(this.unsubscribeUsuarios) this.unsubscribeUsuarios();
+                        }
+                    });
+                },
+                abrirPanelUsuarios() {
+                    this.modalUsuariosAbierto = true;
+                    const refColeccion = collection(db, 'artifacts', appId, 'public', 'data', 'app_users');
+                    this.unsubscribeUsuarios = onSnapshot(refColeccion, (snapshot) => {
+                        const tempUsers = [];
+                        snapshot.forEach((d) => {
+                            tempUsers.push({ id: d.id, ...d.data() });
+                        });
+                        this.listaUsuarios = tempUsers.sort((a,b) => (a.username || '').localeCompare(b.username || ''));
+                    });
+                },
+                cerrarPanelUsuarios() {
+                    this.modalUsuariosAbierto = false;
+                    if(this.unsubscribeUsuarios) {
+                        this.unsubscribeUsuarios();
+                        this.unsubscribeUsuarios = null;
+                    }
+                },
+                async toggleBanUsuario(usuario) {
+                    if (usuario.role === 'admin') return;
+                    const confirmMsg = usuario.banned ? `¿Deseas desbloquear a ${usuario.username}?` : `¿Deseas bloquear a ${usuario.username}?`;
+                    if (confirm(confirmMsg)) {
+                        const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_users', usuario.id);
+                        await setDoc(userRef, { banned: !usuario.banned }, { merge: true });
+                    }
+                },
+                async eliminarPerfilUsuario(uid) {
+                    if (confirm("¿Eliminar este usuario del panel visual?")) {
+                        const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_users', uid);
+                        await deleteDoc(userRef);
+                    }
+                },
+                
+                cambiarModoVista(modo) {
+                    this.viewMode = modo;
+                },
+
+                escucharInventario() {
+                    if (!this.currentUser) return;
+                    const refColeccion = collection(db, 'artifacts', appId, 'public', 'data', 'inventario_ti');
+                    onSnapshot(refColeccion, (snapshot) => {
+                        const datosBD = [];
+                        snapshot.forEach((documento) => {
+                            datosBD.push(documento.data());
+                        });
+                        this.inventario = datosBD;
+                    }, (error) => {
+                        console.error("Error BD:", error);
+                        this.estadoBD = 'Error BD';
+                    });
+                },
+
+                generarFormularioVacio() {
+                    return { 
+                        id: null, assetTag: '', serialNumber: '', marca: '', modelo: '', 
+                        categoria: 'Laptop', estado: 'Activo', asignadoA: '', departamento: '', ubicacion: '', 
+                        fecha: '', notas: '',
+                        procesador: '', hdd: '', ram: '', hostname: '', idTeamviewer: '',
+                        so: '', licencia: '', ip: '', mac: '', estacion: '', vpn: '',
+                        capacidadKva: ''
+                    };
+                },
+
+                getIconoCategoria(cat) {
+                    const iconos = {
+                        'Laptop': 'fa-solid fa-laptop',
+                        'Desktop': 'fa-solid fa-desktop',
+                        'Monitor': 'fa-solid fa-tv',
+                        'Servidor': 'fa-solid fa-server',
+                        'Impresora': 'fa-solid fa-print',
+                        'Networking': 'fa-solid fa-network-wired',
+                        'Periférico': 'fa-solid fa-keyboard',
+                        'UPS': 'fa-solid fa-car-battery',
+                        'Otro': 'fa-solid fa-box'
+                    };
+                    return iconos[cat] || 'fa-solid fa-microchip';
+                },
+                getColorBadgeEstado(estado) {
+                    switch(estado) {
+                        case 'Activo': return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+                        case 'Bodega': return 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800';
+                        case 'Reparación': return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
+                        case 'Baja': return 'bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
+                        default: return 'bg-slate-100 text-slate-700';
+                    }
+                },
+                getColorTextEstado(estado) {
+                    switch(estado) {
+                        case 'Activo': return 'text-green-600 dark:text-green-400';
+                        case 'Bodega': return 'text-yellow-600 dark:text-yellow-400';
+                        case 'Reparación': return 'text-orange-600 dark:text-orange-400';
+                        case 'Baja': return 'text-slate-500';
+                        default: return '';
+                    }
+                },
+
+                abrirDetalle(item) {
+                    this.informeActual = item;
+                    this.modalInformeAbierto = true;
+                },
+                
+                cerrarInforme() {
+                    this.modalInformeAbierto = false;
+                    this.informeActual = null;
+                },
+
+                abrirModal(item = null) {
+                    if (item) {
+                        this.editando = true;
+                        this.formulario = JSON.parse(JSON.stringify(item));
+                        if(!this.formulario.fecha && this.formulario.fechaCompra) {
+                            this.formulario.fecha = this.formulario.fechaCompra;
+                        }
+                    } else {
+                        this.editando = false;
+                        this.formulario = this.generarFormularioVacio();
+                        
+                        // Lógica para ID Consecutivo Automático
+                        let maxId = 0;
+                        this.inventario.forEach(eq => {
+                            // Extrae el número del ID anterior
+                            const num = parseInt(eq.assetTag, 10);
+                            if (!isNaN(num) && num > maxId) {
+                                maxId = num;
+                            }
+                        });
+                        // Asigna el consecutivo sumando 1 al mayor encontrado
+                        this.formulario.assetTag = (maxId + 1).toString();
+                    }
+                    this.modalAbierto = true;
+                },
+                cerrarModal() { this.modalAbierto = false; },
+                
+                async guardarRegistro() {
+                    // Limpieza condicional
+                    if (!((this.formulario.categoria === 'Laptop' || this.formulario.categoria === 'Desktop') && this.formulario.estado === 'Activo')) {
+                        this.formulario.procesador = ''; this.formulario.hdd = ''; this.formulario.ram = ''; 
+                        this.formulario.hostname = ''; this.formulario.idTeamviewer = ''; this.formulario.so = ''; 
+                        this.formulario.licencia = ''; this.formulario.ip = ''; this.formulario.mac = ''; 
+                        this.formulario.estacion = ''; this.formulario.vpn = '';
+                    }
+                    if (this.formulario.categoria !== 'UPS') {
+                        this.formulario.capacidadKva = '';
+                    }
+
+                    if (this.editando) {
+                        const index = this.inventario.findIndex(eq => eq.id === this.formulario.id);
+                        if (index !== -1) this.inventario[index] = JSON.parse(JSON.stringify(this.formulario));
+                    } else {
+                        const nuevoId = 'EQ-' + Date.now();
+                        this.formulario.id = nuevoId;
+                        this.inventario.push(JSON.parse(JSON.stringify(this.formulario)));
+                    }
+                    
+                    if (this.useFirebase && this.currentUser) {
+                        const refDocumento = doc(db, 'artifacts', appId, 'public', 'data', 'inventario_ti', this.formulario.id.toString());
+                        await setDoc(refDocumento, this.formulario);
+                    }
+                    this.cerrarModal();
+                },
+                async eliminarRegistro(id) {
+                    if (confirm("¿Estás seguro de eliminar este equipo del inventario?")) {
+                        if (this.useFirebase && this.currentUser) {
+                            const refDocumento = doc(db, 'artifacts', appId, 'public', 'data', 'inventario_ti', id.toString());
+                            await deleteDoc(refDocumento);
+                        }
+                    }
+                },
+
+                iniciarEscaner(target) {
+                    this.scannerTarget = target;
+                    this.scannerActive = true;
+                    
+                    this.$nextTick(() => {
+                        this.html5QrcodeScanner = new Html5Qrcode("reader");
+                        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                        
+                        this.html5QrcodeScanner.start(
+                            { facingMode: "environment" }, 
+                            config, 
+                            this.onScanSuccess,
+                            this.onScanFailure
+                        ).catch(err => {
+                            console.error("Error al iniciar cámara:", err);
+                            alert("No se pudo acceder a la cámara. Revisa los permisos de tu navegador o asegúrate de usar HTTPS.");
+                            this.scannerActive = false;
+                        });
+                    });
+                },
+                detenerEscaner() {
+                    if (this.html5QrcodeScanner) {
+                        this.html5QrcodeScanner.stop().then(() => {
+                            this.html5QrcodeScanner.clear();
+                            this.html5QrcodeScanner = null;
+                            this.scannerActive = false;
+                        }).catch(err => {
+                            console.error("Error deteniendo cámara", err);
+                            this.scannerActive = false;
+                        });
+                    } else {
+                        this.scannerActive = false;
+                    }
+                },
+                onScanSuccess(decodedText, decodedResult) {
+                    if (this.scannerTarget === 'busqueda') {
+                        this.filtroBusqueda = decodedText;
+                    } else if (this.scannerTarget === 'assetTag') {
+                        this.formulario.assetTag = decodedText;
+                    } else if (this.scannerTarget === 'serialNumber') {
+                        this.formulario.serialNumber = decodedText;
+                    }
+                    this.detenerEscaner();
+                },
+                onScanFailure(error) {}, // Silenciar fallos continuos de búsqueda óptica
+
+                exportarCSV() {
+                    if (this.equiposFiltrados.length === 0) return;
+                    
+                    const cabeceras = [
+                        'ID', 'S/N', 'Categoria', 'Marca', 'Modelo', 'Estado', 'Asignado', 'Departamento', 'Ubicacion', 'Fecha', 
+                        'Hostname', 'Direccion IP', 'MAC', 'Procesador', 'RAM', 'HDD/SSD', 'S.O.', 'Licencia', 'ID TeamViewer', 'Estacion', 'VPN', 'Capacidad KVA',
+                        'Notas'
+                    ];
+
+                    const filas = this.equiposFiltrados.map(eq => {
+                        const notas = (eq.notas || '').replace(/"/g, '""');
+                        const f = eq.fecha || eq.fechaCompra || ''; 
+                        return [
+                            `"${eq.assetTag || ''}"`, `"${eq.serialNumber || ''}"`, eq.categoria || '', `"${eq.marca || ''}"`, `"${eq.modelo || ''}"`, 
+                            eq.estado || '', `"${eq.asignadoA || ''}"`, `"${eq.departamento || ''}"`, `"${eq.ubicacion || ''}"`, f,
+                            `"${eq.hostname || ''}"`, `"${eq.ip || ''}"`, `"${eq.mac || ''}"`, `"${eq.procesador || ''}"`, `"${eq.ram || ''}"`, `"${eq.hdd || ''}"`, 
+                            `"${eq.so || ''}"`, `"${eq.licencia || ''}"`, `"${eq.idTeamviewer || ''}"`, `"${eq.estacion || ''}"`, `"${eq.vpn || ''}"`, `"${eq.capacidadKva || ''}"`,
+                            `"${notas}"`
+                        ];
+                    });
+
+                    const csvContent = cabeceras.join(",") + "\n" + filas.map(e => e.join(",")).join("\n");
+                    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "Inventario_TI_Detallado.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
