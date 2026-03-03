@@ -95,7 +95,6 @@
 </head>
 <body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans min-h-screen transition-colors duration-300">
 
-    <!-- EL CONTENEDOR PRINCIPAL AHORA SE EXPANDE AL 100% SIN RESTRICCIONES -->
     <div id="app" v-cloak class="min-h-screen flex flex-col transition-colors w-full relative">
         
         <!-- PANTALLA DE CARGA -->
@@ -224,7 +223,6 @@
                             <i class="fa-solid fa-arrow-right-from-bracket"></i>
                         </button>
 
-                        <!-- BOTÓN EXPORTAR EXCEL ACTUALIZADO -->
                         <button v-show="viewMode === 'desktop'" @click="exportarExcel" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition font-medium flex items-center gap-2 text-sm">
                             <i class="fa-solid fa-file-excel text-green-600"></i> Exportar
                         </button>
@@ -359,7 +357,7 @@
                                         </tr>
                                         <!-- Filas de equipos pertenecientes a ese grupo -->
                                         <tr v-for="item in equipos" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition bg-white dark:bg-slate-800">
-                                            <td class="px-5 py-4 font-bold text-slate-800 dark:text-slate-100 pl-8"> <!-- Indentado ligero -->
+                                            <td class="px-5 py-4 font-bold text-slate-800 dark:text-slate-100 pl-8">
                                                 <button @click="abrirDetalle(item)" class="hover:text-brand-600 transition-colors text-left flex items-center gap-2 group w-full">
                                                     <i v-if="item.foto" class="fa-solid fa-image text-brand-400 group-hover:text-brand-500 text-xs"></i>
                                                     <i v-else class="fa-solid fa-tag text-slate-400 group-hover:text-brand-500 text-xs"></i>
@@ -386,13 +384,22 @@
                                                     <span v-if="item.ubicacion"><i class="fa-solid fa-location-dot mr-1"></i>{{ item.ubicacion }}</span>
                                                 </div>
                                             </td>
-                                            <td class="px-5 py-4 text-center">
-                                                <button @click="abrirModal(item)" class="text-brand-600 hover:text-brand-800 p-2 mx-1 rounded bg-brand-50 hover:bg-brand-100 transition" title="Editar Equipo">
-                                                    <i class="fa-solid fa-pen-to-square"></i>
-                                                </button>
-                                                <button @click="eliminarRegistro(item.id)" class="text-red-600 hover:text-red-800 p-2 mx-1 rounded bg-red-50 hover:bg-red-100 transition" title="Eliminar">
-                                                    <i class="fa-solid fa-trash-can"></i>
-                                                </button>
+                                            <td class="px-5 py-4">
+                                                <div class="flex justify-center items-center gap-1">
+                                                    <template v-if="puedeEditar(item)">
+                                                        <button @click="abrirModal(item)" class="text-brand-600 hover:text-brand-800 p-2 rounded bg-brand-50 hover:bg-brand-100 transition" title="Editar Equipo">
+                                                            <i class="fa-solid fa-pen-to-square"></i>
+                                                        </button>
+                                                        <button @click="eliminarRegistro(item.id)" class="text-red-600 hover:text-red-800 p-2 rounded bg-red-50 hover:bg-red-100 transition" title="Eliminar">
+                                                            <i class="fa-solid fa-trash-can"></i>
+                                                        </button>
+                                                    </template>
+                                                    <template v-else>
+                                                        <span class="text-slate-400 dark:text-slate-600 p-2 text-xs font-medium flex items-center gap-1 cursor-not-allowed" title="Solo el creador original o un Administrador puede modificar esto">
+                                                            <i class="fa-solid fa-lock"></i>
+                                                        </span>
+                                                    </template>
+                                                </div>
                                             </td>
                                         </tr>
                                     </template>
@@ -428,13 +435,22 @@
                                                 <span v-if="item.ubicacion"><i class="fa-solid fa-location-dot mr-1"></i>{{ item.ubicacion }}</span>
                                             </div>
                                         </td>
-                                        <td class="px-5 py-4 text-center">
-                                            <button @click="abrirModal(item)" class="text-brand-600 hover:text-brand-800 p-2 mx-1 rounded bg-brand-50 hover:bg-brand-100 transition" title="Editar Equipo">
-                                                <i class="fa-solid fa-pen-to-square"></i>
-                                            </button>
-                                            <button @click="eliminarRegistro(item.id)" class="text-red-600 hover:text-red-800 p-2 mx-1 rounded bg-red-50 hover:bg-red-100 transition" title="Eliminar">
-                                                <i class="fa-solid fa-trash-can"></i>
-                                            </button>
+                                        <td class="px-5 py-4">
+                                            <div class="flex justify-center items-center gap-1">
+                                                <template v-if="puedeEditar(item)">
+                                                    <button @click="abrirModal(item)" class="text-brand-600 hover:text-brand-800 p-2 rounded bg-brand-50 hover:bg-brand-100 transition" title="Editar Equipo">
+                                                        <i class="fa-solid fa-pen-to-square"></i>
+                                                    </button>
+                                                    <button @click="eliminarRegistro(item.id)" class="text-red-600 hover:text-red-800 p-2 rounded bg-red-50 hover:bg-red-100 transition" title="Eliminar">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                </template>
+                                                <template v-else>
+                                                    <span class="text-slate-400 dark:text-slate-600 p-2 text-xs font-medium flex items-center gap-1 cursor-not-allowed" title="Solo el creador original o un Administrador puede modificar esto">
+                                                        <i class="fa-solid fa-lock"></i>
+                                                    </span>
+                                                </template>
+                                            </div>
                                         </td>
                                     </tr>
                                 </template>
@@ -573,6 +589,7 @@
                                 <p><span class="font-medium text-slate-500">Categoría:</span> <span class="text-slate-800 dark:text-slate-200">{{ informeActual.categoria }}</span></p>
                                 <p><span class="font-medium text-slate-500">Número de Serie:</span> <span class="font-mono text-slate-800 dark:text-slate-200">{{ informeActual.serialNumber }}</span></p>
                                 <p><span class="font-medium text-slate-500">Fecha de Registro:</span> <span class="text-slate-800 dark:text-slate-200">{{ informeActual.fecha || 'N/A' }}</span></p>
+                                <p class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-600"><span class="font-medium text-slate-500">Registrado por:</span> <span class="font-bold text-brand-600 dark:text-brand-400">{{ informeActual.creadoPor || 'Administrador / Desconocido' }}</span></p>
                             </div>
                         </div>
                     </div>
@@ -628,6 +645,7 @@
                         <h3 class="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100 truncate pr-2">
                             {{ editando ? 'Editar Equipo' : 'Registrar Equipo' }}
                         </h3>
+                        <!-- BOTONES DE ACCIÓN MOVIDOS AQUÍ ARRIBA (SÓLO ICONOS) -->
                         <div class="flex items-center gap-2">
                             <button type="button" @click="cerrarModal" class="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 w-10 h-10 rounded-lg transition flex items-center justify-center text-lg" title="Cancelar">
                                 <i class="fa-solid fa-xmark"></i>
@@ -644,7 +662,6 @@
                             <!-- COLUMNA IZQUIERDA -->
                             <div class="space-y-4">
                                 <div>
-                                    <!-- AQUI SE ELIMINÓ EL ESCÁNER DE ID -->
                                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ID *</label>
                                     <input v-model="formulario.assetTag" type="text" required class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 1, 2, 3...">
                                 </div>
@@ -777,22 +794,19 @@
                             </div>
                         </div>
 
-                        <!-- SUBIDA DE FOTO DEL EQUIPO (NUEVO DISEÑO CON DOS BOTONES) -->
+                        <!-- SUBIDA DE FOTO DEL EQUIPO -->
                         <div class="col-span-1 md:col-span-2 mt-5">
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fotografía del Equipo (Opcional)</label>
                             
                             <div class="w-full h-32 border-2 border-slate-300 dark:border-slate-600 border-dashed rounded-lg bg-slate-50 dark:bg-slate-700/30 overflow-hidden relative flex">
                                 
-                                <!-- SIN FOTO: Mostrar Botones de Cámara y Galería -->
                                 <div v-if="!formulario.foto" class="flex w-full h-full">
-                                    <!-- Botón CÁMARA (con capture="environment") -->
                                     <label for="camera-file" class="flex-1 flex flex-col items-center justify-center border-r border-slate-300 dark:border-slate-600 border-dashed cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
                                         <i class="fa-solid fa-camera text-3xl text-brand-400 mb-2"></i>
                                         <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">Cámara</span>
                                         <input id="camera-file" type="file" accept="image/*" capture="environment" class="hidden" @change="procesarFoto" />
                                     </label>
                                     
-                                    <!-- Botón GALERÍA (sin capture) -->
                                     <label for="gallery-file" class="flex-1 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
                                         <i class="fa-regular fa-image text-3xl text-brand-400 mb-2"></i>
                                         <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">Galería</span>
@@ -800,7 +814,6 @@
                                     </label>
                                 </div>
 
-                                <!-- CON FOTO: Mostrar la imagen cargada -->
                                 <img v-else :src="formulario.foto" class="absolute inset-0 w-full h-full object-contain bg-slate-900" />
                             </div>
                             
@@ -1023,7 +1036,6 @@
                 
                 this.configurarPWA();
 
-                // Service Worker Falso (Pass-through) para forzar WebAPK en Android Chrome
                 if ('serviceWorker' in navigator) {
                     try {
                         const swCode = `
@@ -1036,7 +1048,7 @@
                         const blob = new Blob([swCode], { type: 'text/javascript' });
                         const blobUrl = URL.createObjectURL(blob);
                         navigator.serviceWorker.register(blobUrl).catch((err) => {
-                            console.warn("SW Blob bloqueado. (Para instalar WebAPK real, sube el HTML a un host con HTTPS)", err);
+                            console.warn("SW Blob bloqueado.", err);
                         });
                     } catch (e) {
                         console.warn("Entorno restringido para Service Workers.");
@@ -1260,6 +1272,12 @@
                     }
                 },
                 
+                // --- SEGURIDAD Y PERMISOS ---
+                puedeEditar(item) {
+                    // Solo permite editar si eres "edu" (Admin) o si tú creaste el registro
+                    return this.loggedUsername === 'edu' || item.creadoPor === this.loggedUsername;
+                },
+
                 cambiarModoVista(modo) {
                     this.viewMode = modo;
                 },
@@ -1286,11 +1304,11 @@
                         fecha: '', notas: '', foto: null,
                         procesador: '', hdd: '', ram: '', hostname: '', idTeamviewer: '',
                         so: '', licencia: '', ip: '', mac: '', estacion: '', vpn: '',
-                        capacidadKva: ''
+                        capacidadKva: '', 
+                        creadoPor: this.loggedUsername // ALMACENAR AL AUTOR
                     };
                 },
 
-                // METODO PARA COMPRIMIR Y GUARDAR LA IMAGEN EN BASE64
                 procesarFoto(event) {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -1300,7 +1318,7 @@
                         const img = new Image();
                         img.onload = () => {
                             const canvas = document.createElement('canvas');
-                            const MAX_WIDTH = 800; // Redimensionamos a máximo 800px para que pese poco en la BD
+                            const MAX_WIDTH = 800; 
                             const MAX_HEIGHT = 800;
                             let width = img.width;
                             let height = img.height;
@@ -1321,7 +1339,6 @@
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, width, height);
                             
-                            // Guardar imagen comprimida a JPEG al 70% de calidad
                             this.formulario.foto = canvas.toDataURL('image/jpeg', 0.7); 
                         };
                         img.src = e.target.result;
@@ -1374,6 +1391,11 @@
 
                 abrirModal(item = null) {
                     if (item) {
+                        // Verificación extra de seguridad
+                        if (!this.puedeEditar(item)) {
+                            alert("Acceso denegado. Solo el creador de este registro o un Administrador pueden modificarlo.");
+                            return;
+                        }
                         this.editando = true;
                         this.formulario = JSON.parse(JSON.stringify(item));
                         if(!this.formulario.fecha && this.formulario.fechaCompra) {
@@ -1409,7 +1431,12 @@
 
                     if (this.editando) {
                         const index = this.inventario.findIndex(eq => eq.id === this.formulario.id);
-                        if (index !== -1) this.inventario[index] = JSON.parse(JSON.stringify(this.formulario));
+                        if (index !== -1) {
+                            // Preservar siempre al creador original sin importar quién edita (si es admin)
+                            const creadorOriginal = this.inventario[index].creadoPor;
+                            this.formulario.creadoPor = creadorOriginal || this.loggedUsername;
+                            this.inventario[index] = JSON.parse(JSON.stringify(this.formulario));
+                        }
                     } else {
                         const nuevoId = 'EQ-' + Date.now();
                         this.formulario.id = nuevoId;
@@ -1423,6 +1450,12 @@
                     this.cerrarModal();
                 },
                 async eliminarRegistro(id) {
+                    const item = this.inventario.find(eq => eq.id === id);
+                    if (item && !this.puedeEditar(item)) {
+                        alert("Acceso denegado. No tienes permiso para eliminar este registro.");
+                        return;
+                    }
+
                     if (confirm("¿Estás seguro de eliminar este equipo del inventario?")) {
                         if (this.useFirebase && this.currentUser) {
                             const refDocumento = doc(db, 'artifacts', appId, 'public', 'data', 'inventario_ti', id.toString());
@@ -1431,7 +1464,6 @@
                     }
                 },
 
-                // METODOS DEL ESCÁNER MEJORADOS
                 iniciarEscaner(target, restart = false) {
                     if (!restart) {
                         this.scannerTarget = target;
@@ -1453,7 +1485,6 @@
                             this.onScanFailure
                         ).catch(err => {
                             console.error("Error al iniciar cámara:", err);
-                            // Fallback de seguridad por si falla la cámara elegida
                             if (restart) {
                                 this.scannerFacingMode = 'environment';
                             } else {
@@ -1517,16 +1548,13 @@
                 },
                 onScanFailure(error) {},
 
-                // NUEVO: Exportar a XLSX (EXCEL NATIVO MEDIANTE EXCELJS)
                 async exportarExcel() {
                     if (this.equiposFiltrados.length === 0) return;
 
                     try {
-                        // Crear nuevo workbook
                         const workbook = new ExcelJS.Workbook();
                         const worksheet = workbook.addWorksheet('Inventario TI');
 
-                        // Definir cabeceras
                         const columns = [
                             { header: 'ID', key: 'id', width: 10 },
                             { header: 'S/N', key: 'sn', width: 20 },
@@ -1538,6 +1566,7 @@
                             { header: 'Departamento', key: 'departamento', width: 20 },
                             { header: 'Ubicación', key: 'ubicacion', width: 20 },
                             { header: 'Fecha', key: 'fecha', width: 15 },
+                            { header: 'Registrado Por', key: 'autor', width: 15 },
                             { header: 'Hostname', key: 'hostname', width: 15 },
                             { header: 'Dirección IP', key: 'ip', width: 15 },
                             { header: 'MAC', key: 'mac', width: 20 },
@@ -1556,7 +1585,6 @@
 
                         worksheet.columns = columns;
 
-                        // Estilo para cabeceras
                         worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
                         worksheet.getRow(1).fill = {
                             type: 'pattern',
@@ -1564,11 +1592,9 @@
                             fgColor: { argb: 'FF0EA5E9' }
                         };
 
-                        // Iterar y agregar filas
                         for (let i = 0; i < this.equiposFiltrados.length; i++) {
                             const eq = this.equiposFiltrados[i];
                             
-                            // Agrega fila de texto base
                             const row = worksheet.addRow({
                                 id: eq.assetTag || '',
                                 sn: eq.serialNumber || '',
@@ -1580,6 +1606,7 @@
                                 departamento: eq.departamento || '',
                                 ubicacion: eq.ubicacion || '',
                                 fecha: eq.fecha || eq.fechaCompra || '',
+                                autor: eq.creadoPor || 'N/A',
                                 hostname: eq.hostname || '',
                                 ip: eq.ip || '',
                                 mac: eq.mac || '',
@@ -1595,13 +1622,10 @@
                                 notas: eq.notas || ''
                             });
 
-                            // Alinear contenido verticalmente al centro
                             row.alignment = { vertical: 'middle', wrapText: true };
 
-                            // Si hay foto, procesarla y ajustarla a la celda
                             if (eq.foto) {
                                 try {
-                                    // Make the row taller to accommodate the image
                                     row.height = 80;
 
                                     const imageId = workbook.addImage({
@@ -1609,9 +1633,9 @@
                                         extension: 'jpeg',
                                     });
 
-                                    // Agregar la imagen a la celda específica (Columna 24 index 23)
+                                    // Columna Fotografía es la índice 24 (0-based = 23 en ExcelJS v4 pero AddImage usa index 24 en array)
                                     worksheet.addImage(imageId, {
-                                        tl: { col: 23, row: row.number - 1 },
+                                        tl: { col: 24, row: row.number - 1 },
                                         ext: { width: 100, height: 100 }
                                     });
                                 } catch(err) {
@@ -1620,7 +1644,6 @@
                             }
                         }
 
-                        // Descargar el archivo nativo .xlsx
                         const buffer = await workbook.xlsx.writeBuffer();
                         saveAs(new Blob([buffer]), "Inventario_TI_Detallado.xlsx");
 
