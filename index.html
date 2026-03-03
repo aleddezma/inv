@@ -307,10 +307,10 @@
                             
                             <!-- SELECTOR DE VISTA Y ORDENAMIENTO -->
                             <select v-model="modoVista" class="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-60 font-medium theme-transition text-ellipsis">
-                                <option value="grupo_estado">Agrupar por Estado</option>
-                                <option value="grupo_asignado_ubicacion">Agrupar por Asignado/Ubicación</option>
                                 <option value="az">Ordenar: A - Z</option>
                                 <option value="za">Ordenar: Z - A</option>
+                                <option value="grupo_estado">Agrupar por Estado</option>
+                                <option value="grupo_asignado_ubicacion">Agrupar por Asignado/Ubicación</option>
                             </select>
                         </div>
                         
@@ -352,7 +352,8 @@
                                         <tr v-for="item in equipos" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition bg-white dark:bg-slate-800">
                                             <td class="px-5 py-4 font-bold text-slate-800 dark:text-slate-100 pl-8"> <!-- Indentado ligero -->
                                                 <button @click="abrirDetalle(item)" class="hover:text-brand-600 transition-colors text-left flex items-center gap-2 group w-full">
-                                                    <i class="fa-solid fa-tag text-slate-400 group-hover:text-brand-500 text-xs"></i>
+                                                    <i v-if="item.foto" class="fa-solid fa-image text-brand-400 group-hover:text-brand-500 text-xs"></i>
+                                                    <i v-else class="fa-solid fa-tag text-slate-400 group-hover:text-brand-500 text-xs"></i>
                                                     <span class="group-hover:underline decoration-brand-500 underline-offset-4">{{ item.assetTag }}</span>
                                                 </button>
                                             </td>
@@ -393,7 +394,8 @@
                                     <tr v-for="item in equiposFiltrados" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
                                         <td class="px-5 py-4 font-bold text-slate-800 dark:text-slate-100">
                                             <button @click="abrirDetalle(item)" class="hover:text-brand-600 transition-colors text-left flex items-center gap-2 group w-full">
-                                                <i class="fa-solid fa-tag text-slate-400 group-hover:text-brand-500 text-xs"></i>
+                                                <i v-if="item.foto" class="fa-solid fa-image text-brand-400 group-hover:text-brand-500 text-xs"></i>
+                                                <i v-else class="fa-solid fa-tag text-slate-400 group-hover:text-brand-500 text-xs"></i>
                                                 <span class="group-hover:underline decoration-brand-500 underline-offset-4">{{ item.assetTag }}</span>
                                             </button>
                                         </td>
@@ -512,7 +514,7 @@
             </div>
         </div>
 
-        <!-- NUEVO: Modal Informe Detallado Ficha Técnica -->
+        <!-- Modal Informe Detallado Ficha Técnica -->
         <div v-if="modalInformeAbierto && informeActual" class="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 flex items-center justify-center z-[60] p-4">
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden my-auto dark-transition border border-transparent dark:border-slate-700 flex flex-col max-h-[90vh]">
                 
@@ -521,7 +523,7 @@
                     <div>
                         <h3 class="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
                             <i :class="getIconoCategoria(informeActual.categoria)" class="text-brand-600 dark:text-brand-400"></i>
-                            {{ informeActual.assetTag }}
+                            ID: {{ informeActual.assetTag }}
                         </h3>
                         <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{{ informeActual.marca }} {{ informeActual.modelo || '' }}</p>
                     </div>
@@ -535,6 +537,15 @@
 
                 <!-- Body del Informe -->
                 <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+                    
+                    <!-- FOTOGRAFÍA (Si existe) -->
+                    <div v-if="informeActual.foto" class="bg-slate-100/50 dark:bg-slate-900/30 rounded-lg p-4 border border-slate-200 dark:border-slate-700 col-span-1 md:col-span-2">
+                        <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-camera"></i> Fotografía del Equipo</h4>
+                        <div class="flex justify-center">
+                            <img :src="informeActual.foto" class="max-h-64 object-contain rounded-md shadow-sm border border-slate-200 dark:border-slate-600" />
+                        </div>
+                    </div>
+
                     <!-- Info General -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Asignación -->
@@ -599,30 +610,34 @@
             </div>
         </div>
 
-        <!-- Modal Formulario de Equipo (CORREGIDO PARA EVITAR DUPLICIDAD DE COLUMNA DERECHA) -->
+        <!-- Modal Formulario de Equipo -->
         <div v-if="modalAbierto && isLoggedIn" class="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 flex items-center justify-center z-50 p-4">
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full flex flex-col max-h-[95vh] overflow-hidden my-auto dark-transition border border-transparent dark:border-slate-700" :class="viewMode === 'mobile' ? 'max-w-md' : 'max-w-3xl'">
-                <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
-                    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">
-                        {{ editando ? 'Editar Equipo' : 'Registrar Nuevo Equipo' }}
-                    </h3>
-                    <button @click="cerrarModal" class="text-slate-400 hover:text-slate-600 transition">
-                        <i class="fa-solid fa-xmark text-xl"></i>
-                    </button>
-                </div>
                 
-                <form @submit.prevent="guardarRegistro" class="flex flex-col flex-1 overflow-hidden">
-                    <div class="p-6 overflow-y-auto custom-scrollbar">
+                <form @submit.prevent="guardarRegistro" class="flex flex-col h-full max-h-[95vh]">
+                    <div class="flex justify-between items-center px-5 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100 truncate pr-2">
+                            {{ editando ? 'Editar Equipo' : 'Registrar Equipo' }}
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="cerrarModal" class="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 w-10 h-10 rounded-lg transition flex items-center justify-center text-lg" title="Cancelar">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            <button type="submit" class="bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 text-white w-10 h-10 rounded-lg shadow-md transition-all font-bold flex items-center justify-center text-lg" title="Guardar">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 overflow-y-auto custom-scrollbar flex flex-col flex-1">
                         <div class="grid gap-5" :class="viewMode === 'mobile' ? '!grid-cols-1' : 'grid-cols-1 md:grid-cols-2'">
                             
                             <!-- COLUMNA IZQUIERDA -->
                             <div class="space-y-4">
                                 <div>
+                                    <!-- AQUI SE ELIMINÓ EL ESCÁNER DE ID -->
                                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ID *</label>
-                                    <div class="relative">
-                                        <input v-model="formulario.assetTag" type="text" required class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg pl-3 pr-10 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 1, 2, 3...">
-                                        <button type="button" @click="iniciarEscaner('assetTag')" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-brand-500 hover:text-brand-700 transition" title="Escanear con Cámara"><i class="fa-solid fa-barcode"></i></button>
-                                    </div>
+                                    <input v-model="formulario.assetTag" type="text" required class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. 1, 2, 3...">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Número de Serie (S/N) *</label>
@@ -655,7 +670,7 @@
                                         <option value="Otro">Otro</option>
                                     </select>
                                 </div>
-                            </div> <!-- Cierre correcto de Columna Izquierda -->
+                            </div>
 
                             <!-- COLUMNA DERECHA -->
                             <div class="space-y-4">
@@ -678,7 +693,6 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación / Oficina</label>
-                                    <!-- Si es la misma oficina, pon el mismo nombre aquí para que se agrupen centralizados -->
                                     <input v-model="formulario.ubicacion" type="text" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Ej. Piso 4, Oficina HR">
                                 </div>
                                 <div>
@@ -686,9 +700,9 @@
                                     <input v-model="formulario.fecha" type="date" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
                                 </div>
                             </div>
-                        </div> <!-- Cierre del Grid Principal de 2 Columnas -->
+                        </div>
 
-                        <!-- CAMPOS CONDICIONALES: PC / LAPTOP ACTIVO (Debajo de ambas columnas) -->
+                        <!-- CAMPOS CONDICIONALES: PC / LAPTOP ACTIVO -->
                         <div v-if="(formulario.categoria === 'Laptop' || formulario.categoria === 'Desktop') && formulario.estado === 'Activo'" class="col-span-1 md:col-span-2 p-5 bg-slate-100 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 mt-5">
                             <h4 class="text-sm font-bold text-brand-600 dark:text-brand-400 mb-4 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
                                 <i class="fa-solid fa-microchip"></i> Especificaciones y Red (Equipo Activo)
@@ -741,7 +755,7 @@
                             </div>
                         </div>
 
-                        <!-- CAMPOS CONDICIONALES: UPS (Debajo de ambas columnas) -->
+                        <!-- CAMPOS CONDICIONALES: UPS -->
                         <div v-if="formulario.categoria === 'UPS'" class="col-span-1 md:col-span-2 p-5 bg-slate-100 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 mt-5">
                             <h4 class="text-sm font-bold text-brand-600 dark:text-brand-400 mb-4 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
                                 <i class="fa-solid fa-car-battery"></i> Especificaciones UPS
@@ -754,29 +768,55 @@
                             </div>
                         </div>
 
-                        <!-- OBSERVACIONES FINALES (Ocupa todo el ancho) -->
+                        <!-- SUBIDA DE FOTO DEL EQUIPO (NUEVO DISEÑO CON DOS BOTONES) -->
                         <div class="col-span-1 md:col-span-2 mt-5">
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fotografía del Equipo (Opcional)</label>
+                            
+                            <div class="w-full h-32 border-2 border-slate-300 dark:border-slate-600 border-dashed rounded-lg bg-slate-50 dark:bg-slate-700/30 overflow-hidden relative flex">
+                                
+                                <!-- SIN FOTO: Mostrar Botones de Cámara y Galería -->
+                                <div v-if="!formulario.foto" class="flex w-full h-full">
+                                    <!-- Botón CÁMARA (con capture="environment") -->
+                                    <label for="camera-file" class="flex-1 flex flex-col items-center justify-center border-r border-slate-300 dark:border-slate-600 border-dashed cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
+                                        <i class="fa-solid fa-camera text-3xl text-brand-400 mb-2"></i>
+                                        <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">Cámara</span>
+                                        <input id="camera-file" type="file" accept="image/*" capture="environment" class="hidden" @change="procesarFoto" />
+                                    </label>
+                                    
+                                    <!-- Botón GALERÍA (sin capture) -->
+                                    <label for="gallery-file" class="flex-1 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition">
+                                        <i class="fa-regular fa-image text-3xl text-brand-400 mb-2"></i>
+                                        <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">Galería</span>
+                                        <input id="gallery-file" type="file" accept="image/*" class="hidden" @change="procesarFoto" />
+                                    </label>
+                                </div>
+
+                                <!-- CON FOTO: Mostrar la imagen cargada -->
+                                <img v-else :src="formulario.foto" class="absolute inset-0 w-full h-full object-contain bg-slate-900" />
+                            </div>
+                            
+                            <button v-if="formulario.foto" type="button" @click="formulario.foto = null" class="mt-2 text-xs text-red-500 hover:text-red-700 font-bold flex items-center gap-1 transition">
+                                <i class="fa-solid fa-trash-can"></i> Quitar Foto
+                            </button>
+                        </div>
+
+                        <!-- OBSERVACIONES FINALES -->
+                        <div class="col-span-1 md:col-span-2 mt-2 pb-4">
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notas / Observaciones</label>
                             <textarea v-model="formulario.notas" rows="2" class="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Detalles de reparaciones, características adicionales..."></textarea>
                         </div>
-                    </div>
-
-                    <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 shrink-0" :class="viewMode === 'mobile' ? 'flex-col-reverse' : 'justify-end'">
-                        <button type="button" @click="cerrarModal" class="px-5 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition font-medium" :class="{'w-full': viewMode === 'mobile'}">Cancelar</button>
-                        <button type="submit" class="px-5 py-2 rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 text-white transition-all font-bold flex items-center justify-center gap-2" :class="{'w-full': viewMode === 'mobile'}">
-                            <i class="fa-solid fa-floppy-disk"></i> Guardar
-                        </button>
+                        
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- MODAL DE CÁMARA PARA ESCÁNER -->
+        <!-- MODAL DE CÁMARA PARA ESCÁNER (CON FLASH Y CAMBIO DE CÁMARA) -->
         <div v-if="scannerActive" class="fixed inset-0 bg-slate-900/95 flex flex-col items-center justify-center z-[70] p-4 backdrop-blur-sm">
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700">
                 <div class="p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                     <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        <i class="fa-solid fa-camera text-brand-500"></i> Escáner de Código
+                        <i class="fa-solid fa-barcode text-brand-500"></i> Escáner de Código
                     </h3>
                     <button @click="detenerEscaner" class="text-slate-400 hover:text-red-500 transition">
                         <i class="fa-solid fa-xmark text-xl"></i>
@@ -784,12 +824,17 @@
                 </div>
                 
                 <div class="bg-black w-full flex justify-center items-center relative min-h-[300px]">
-                    <!-- Contenedor donde la librería inyectará el video de la cámara -->
                     <div id="reader" class="w-full"></div>
                 </div>
                 
-                <div class="p-4 text-center bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
-                    <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Apunta la cámara al código de barras o QR para escanear.</p>
+                <!-- Controles de la cámara (Flash y Cambiar) -->
+                <div class="p-3 bg-slate-100 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-700 flex justify-center gap-4">
+                    <button @click="toggleFlashEscaner" class="flex-1 py-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition font-bold flex items-center justify-center gap-2 text-sm shadow-sm">
+                        <i class="fa-solid fa-bolt" :class="{'text-yellow-500': scannerTorchOn}"></i> Flash
+                    </button>
+                    <button @click="toggleCamaraEscanner" class="flex-1 py-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition font-bold flex items-center justify-center gap-2 text-sm shadow-sm">
+                        <i class="fa-solid fa-camera-rotate"></i> Cambiar Cámara
+                    </button>
                 </div>
             </div>
         </div>
@@ -803,7 +848,7 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuración de Firebase para Inventario TI (Tus credenciales verdaderas de inventario)
+        // Configuración de Firebase para Inventario TI
         const firebaseConfig = {
             apiKey: "AIzaSyBN5DXH8mBza-kyXhBo3vdhUFeE1Wyo7qc",
             authDomain: "inventarioti-3e796.firebaseapp.com",
@@ -843,7 +888,7 @@
                     unsubscribeUsuarios: null,
 
                     isDarkMode: false, 
-                    mostrarBotonInstalar: false, // Variable para controlar botón de PWA
+                    mostrarBotonInstalar: false, 
                     viewMode: 'desktop',
                     mostrarMenuTemas: false,
                     temaActual: 'blue',
@@ -857,7 +902,7 @@
 
                     filtroBusqueda: '',
                     filtroEstado: 'Todos',
-                    modoVista: 'az', // POR DEFECTO: Ordenado de la A-Z
+                    modoVista: 'az',
                     
                     inventario: [], 
                     
@@ -865,21 +910,20 @@
                     editando: false,
                     formulario: this.generarFormularioVacio(),
 
-                    // Variables para el Informe Detallado
                     modalInformeAbierto: false,
                     informeActual: null,
 
-                    // VARIABLES DEL ESCÁNER DE CÁMARA
+                    // VARIABLES DEL ESCÁNER
                     scannerActive: false,
                     scannerTarget: '', 
+                    scannerFacingMode: 'environment', // 'environment' = trasera, 'user' = frontal
+                    scannerTorchOn: false,
                     html5QrcodeScanner: null
                 }
             },
             computed: {
                 deviceSimulationClass() {
-                    // Expansión total en escritorio sin márgenes artificiales
                     if (this.viewMode === 'desktop') return 'w-full flex-1 px-4 sm:px-6 lg:px-8 py-6';
-                    // Modo celular:
                     if (this.viewMode === 'mobile') return 'w-full max-w-[390px] m-auto sm:border-[14px] border-slate-800 dark:border-slate-700 sm:rounded-[2.5rem] sm:h-[85vh] overflow-y-auto px-4 py-6 shadow-2xl bg-slate-50 dark:bg-slate-900';
                 },
                 equiposFiltrados() {
@@ -900,7 +944,6 @@
                         );
                     }
 
-                    // APLICAR ORDENAMIENTO (Si no está en modo agrupar)
                     if (this.modoVista === 'az') {
                         resultado.sort((a, b) => (a.assetTag || '').localeCompare(b.assetTag || '', undefined, {numeric: true}));
                     } else if (this.modoVista === 'za') {
@@ -910,7 +953,6 @@
                     return resultado;
                 },
                 
-                // NUEVO: Agrupa los equipos de forma dinámica según la selección del filtro
                 equiposAgrupados() {
                     const grupos = {};
                     
@@ -929,7 +971,6 @@
                         grupos[valor].push(eq);
                     });
                     
-                    // Ordenar alfabéticamente por el nombre del grupo creado
                     return Object.keys(grupos).sort().reduce((acc, key) => {
                         acc[key] = grupos[key];
                         return acc;
@@ -971,7 +1012,6 @@
 
                 if (this.useFirebase) this.iniciarAuth();
                 
-                // Inicializar Configuración PWA
                 this.configurarPWA();
             },
             methods: {
@@ -982,7 +1022,7 @@
                         localStorage.setItem('app_color_theme', temaId);
                         this.mostrarMenuTemas = false;
                     }
-                    this.configurarPWA(); // Refrescar color PWA
+                    this.configurarPWA(); 
                 },
                 toggleThemeMode() {
                     this.isDarkMode = !this.isDarkMode;
@@ -993,10 +1033,9 @@
                         document.documentElement.classList.remove('dark');
                         localStorage.setItem('theme', 'light');
                     }
-                    this.configurarPWA(); // Refrescar color PWA
+                    this.configurarPWA(); 
                 },
                 
-                // --- PWA MÉTODOS ---
                 configurarPWA() {
                     if (window.isAppInstallable) {
                         this.mostrarBotonInstalar = true;
@@ -1011,7 +1050,6 @@
                     const metaThemeColor = document.getElementById('meta-theme-color');
                     if (metaThemeColor) metaThemeColor.content = currentColorHex;
 
-                    // SVG de una caja/servidor para el ícono de la app
                     const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="${currentColorHex}"/><path d="M256 48L48 160v192l208 112 208-112V160L256 48zm0 57.3L392 180l-136 74.7L120 180l136-74.7zM96 208.6l136 74.7v156.4L96 364.3V208.6zm184 231.1V283.3l136-74.7v155.7L280 439.7z" fill="#ffffff"/></svg>`;
                     const iconB64 = btoa(iconSvg);
                     
@@ -1049,7 +1087,6 @@
                     }
                     window.deferredPrompt = null;
                 },
-                // -------------------
 
                 async procesarAuth() {
                     this.authError = '';
@@ -1208,11 +1245,50 @@
                     return { 
                         id: null, assetTag: '', serialNumber: '', marca: '', modelo: '', 
                         categoria: 'Laptop', estado: 'Activo', asignadoA: '', departamento: '', ubicacion: '', 
-                        fecha: '', notas: '',
+                        fecha: '', notas: '', foto: null,
                         procesador: '', hdd: '', ram: '', hostname: '', idTeamviewer: '',
                         so: '', licencia: '', ip: '', mac: '', estacion: '', vpn: '',
                         capacidadKva: ''
                     };
+                },
+
+                // METODO PARA COMPRIMIR Y GUARDAR LA IMAGEN EN BASE64
+                procesarFoto(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 800; // Redimensionamos a máximo 800px para que pese poco en la BD
+                            const MAX_HEIGHT = 800;
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > MAX_WIDTH) {
+                                    height *= MAX_WIDTH / width;
+                                    width = MAX_WIDTH;
+                                }
+                            } else {
+                                if (height > MAX_HEIGHT) {
+                                    width *= MAX_HEIGHT / height;
+                                    height = MAX_HEIGHT;
+                                }
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            // Guardar imagen comprimida a JPEG al 70% de calidad
+                            this.formulario.foto = canvas.toDataURL('image/jpeg', 0.7); 
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
                 },
 
                 getIconoCategoria(cat) {
@@ -1269,16 +1345,13 @@
                         this.editando = false;
                         this.formulario = this.generarFormularioVacio();
                         
-                        // Lógica para ID Consecutivo Automático
                         let maxId = 0;
                         this.inventario.forEach(eq => {
-                            // Extrae el número del ID anterior
                             const num = parseInt(eq.assetTag, 10);
                             if (!isNaN(num) && num > maxId) {
                                 maxId = num;
                             }
                         });
-                        // Asigna el consecutivo sumando 1 al mayor encontrado
                         this.formulario.assetTag = (maxId + 1).toString();
                     }
                     this.modalAbierto = true;
@@ -1286,7 +1359,6 @@
                 cerrarModal() { this.modalAbierto = false; },
                 
                 async guardarRegistro() {
-                    // Limpieza condicional
                     if (!((this.formulario.categoria === 'Laptop' || this.formulario.categoria === 'Desktop') && this.formulario.estado === 'Activo')) {
                         this.formulario.procesador = ''; this.formulario.hdd = ''; this.formulario.ram = ''; 
                         this.formulario.hostname = ''; this.formulario.idTeamviewer = ''; this.formulario.so = ''; 
@@ -1321,36 +1393,76 @@
                     }
                 },
 
-                iniciarEscaner(target) {
-                    this.scannerTarget = target;
-                    this.scannerActive = true;
+                // METODOS DEL ESCÁNER MEJORADOS
+                iniciarEscaner(target, restart = false) {
+                    if (!restart) {
+                        this.scannerTarget = target;
+                        this.scannerActive = true;
+                        this.scannerFacingMode = 'environment';
+                        this.scannerTorchOn = false;
+                    }
                     
                     this.$nextTick(() => {
-                        this.html5QrcodeScanner = new Html5Qrcode("reader");
+                        if(!this.html5QrcodeScanner) {
+                            this.html5QrcodeScanner = new Html5Qrcode("reader");
+                        }
                         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
                         
                         this.html5QrcodeScanner.start(
-                            { facingMode: "environment" }, 
+                            { facingMode: this.scannerFacingMode }, 
                             config, 
                             this.onScanSuccess,
                             this.onScanFailure
                         ).catch(err => {
                             console.error("Error al iniciar cámara:", err);
-                            alert("No se pudo acceder a la cámara. Revisa los permisos de tu navegador o asegúrate de usar HTTPS.");
-                            this.scannerActive = false;
+                            // Fallback de seguridad por si falla la cámara elegida
+                            if (restart) {
+                                this.scannerFacingMode = 'environment';
+                            } else {
+                                alert("No se pudo acceder a la cámara. Comprueba los permisos o el dispositivo.");
+                                this.scannerActive = false;
+                            }
                         });
                     });
                 },
+                async toggleCamaraEscanner() {
+                    if (this.html5QrcodeScanner && this.html5QrcodeScanner.isScanning) {
+                        await this.html5QrcodeScanner.stop();
+                        this.scannerFacingMode = this.scannerFacingMode === 'environment' ? 'user' : 'environment';
+                        this.scannerTorchOn = false; 
+                        this.iniciarEscaner(this.scannerTarget, true);
+                    }
+                },
+                async toggleFlashEscaner() {
+                    if (this.html5QrcodeScanner && this.html5QrcodeScanner.isScanning) {
+                        try {
+                            this.scannerTorchOn = !this.scannerTorchOn;
+                            await this.html5QrcodeScanner.applyVideoConstraints({
+                                advanced: [{ torch: this.scannerTorchOn }]
+                            });
+                        } catch (e) {
+                            console.error("Flash no soportado", e);
+                            this.scannerTorchOn = !this.scannerTorchOn;
+                            alert("La linterna no está soportada en esta cámara o navegador.");
+                        }
+                    }
+                },
                 detenerEscaner() {
                     if (this.html5QrcodeScanner) {
-                        this.html5QrcodeScanner.stop().then(() => {
+                        if (this.html5QrcodeScanner.isScanning) {
+                            this.html5QrcodeScanner.stop().then(() => {
+                                this.html5QrcodeScanner.clear();
+                                this.html5QrcodeScanner = null;
+                                this.scannerActive = false;
+                            }).catch(err => {
+                                console.error("Error deteniendo cámara", err);
+                                this.scannerActive = false;
+                            });
+                        } else {
                             this.html5QrcodeScanner.clear();
                             this.html5QrcodeScanner = null;
                             this.scannerActive = false;
-                        }).catch(err => {
-                            console.error("Error deteniendo cámara", err);
-                            this.scannerActive = false;
-                        });
+                        }
                     } else {
                         this.scannerActive = false;
                     }
@@ -1365,7 +1477,7 @@
                     }
                     this.detenerEscaner();
                 },
-                onScanFailure(error) {}, // Silenciar fallos continuos de búsqueda óptica
+                onScanFailure(error) {},
 
                 exportarCSV() {
                     if (this.equiposFiltrados.length === 0) return;
