@@ -12,6 +12,10 @@
     
     <!-- LIBRERÍA PARA ESCANEAR CÓDIGOS DE BARRAS/QR -->
     <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <!-- LIBRERÍAS PARA EXPORTAR A EXCEL (.xlsx) CON IMÁGENES -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <!-- MOTOR DE TEMAS Y VARIABLES CSS -->
     <style>
@@ -220,8 +224,9 @@
                             <i class="fa-solid fa-arrow-right-from-bracket"></i>
                         </button>
 
-                        <button v-show="viewMode === 'desktop'" @click="exportarCSV" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition font-medium flex items-center gap-2 text-sm">
-                            <i class="fa-solid fa-file-csv text-green-600"></i> Exportar
+                        <!-- BOTÓN EXPORTAR EXCEL ACTUALIZADO -->
+                        <button v-show="viewMode === 'desktop'" @click="exportarExcel" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition font-medium flex items-center gap-2 text-sm">
+                            <i class="fa-solid fa-file-excel text-green-600"></i> Exportar
                         </button>
 
                         <button @click="abrirModal(null)" class="bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 text-white px-4 py-2 rounded-lg shadow-md transition-all font-bold flex items-center gap-2 text-sm" :class="{'!w-full justify-center mt-2 py-3': viewMode === 'mobile'}">
@@ -1479,37 +1484,117 @@
                 },
                 onScanFailure(error) {},
 
-                exportarCSV() {
+                // NUEVO: Exportar a XLSX (EXCEL NATIVO MEDIANTE EXCELJS)
+                async exportarExcel() {
                     if (this.equiposFiltrados.length === 0) return;
-                    
-                    const cabeceras = [
-                        'ID', 'S/N', 'Categoria', 'Marca', 'Modelo', 'Estado', 'Asignado', 'Departamento', 'Ubicacion', 'Fecha', 
-                        'Hostname', 'Direccion IP', 'MAC', 'Procesador', 'RAM', 'HDD/SSD', 'S.O.', 'Licencia', 'ID TeamViewer', 'Estacion', 'VPN', 'Capacidad KVA',
-                        'Notas'
-                    ];
 
-                    const filas = this.equiposFiltrados.map(eq => {
-                        const notas = (eq.notas || '').replace(/"/g, '""');
-                        const f = eq.fecha || eq.fechaCompra || ''; 
-                        return [
-                            `"${eq.assetTag || ''}"`, `"${eq.serialNumber || ''}"`, eq.categoria || '', `"${eq.marca || ''}"`, `"${eq.modelo || ''}"`, 
-                            eq.estado || '', `"${eq.asignadoA || ''}"`, `"${eq.departamento || ''}"`, `"${eq.ubicacion || ''}"`, f,
-                            `"${eq.hostname || ''}"`, `"${eq.ip || ''}"`, `"${eq.mac || ''}"`, `"${eq.procesador || ''}"`, `"${eq.ram || ''}"`, `"${eq.hdd || ''}"`, 
-                            `"${eq.so || ''}"`, `"${eq.licencia || ''}"`, `"${eq.idTeamviewer || ''}"`, `"${eq.estacion || ''}"`, `"${eq.vpn || ''}"`, `"${eq.capacidadKva || ''}"`,
-                            `"${notas}"`
+                    try {
+                        // Crear nuevo workbook
+                        const workbook = new ExcelJS.Workbook();
+                        const worksheet = workbook.addWorksheet('Inventario TI');
+
+                        // Definir cabeceras
+                        const columns = [
+                            { header: 'ID', key: 'id', width: 10 },
+                            { header: 'S/N', key: 'sn', width: 20 },
+                            { header: 'Categoría', key: 'categoria', width: 15 },
+                            { header: 'Marca', key: 'marca', width: 15 },
+                            { header: 'Modelo', key: 'modelo', width: 15 },
+                            { header: 'Estado', key: 'estado', width: 15 },
+                            { header: 'Asignado A', key: 'asignado', width: 20 },
+                            { header: 'Departamento', key: 'departamento', width: 20 },
+                            { header: 'Ubicación', key: 'ubicacion', width: 20 },
+                            { header: 'Fecha', key: 'fecha', width: 15 },
+                            { header: 'Hostname', key: 'hostname', width: 15 },
+                            { header: 'Dirección IP', key: 'ip', width: 15 },
+                            { header: 'MAC', key: 'mac', width: 20 },
+                            { header: 'Procesador', key: 'procesador', width: 15 },
+                            { header: 'RAM', key: 'ram', width: 10 },
+                            { header: 'HDD/SSD', key: 'hdd', width: 15 },
+                            { header: 'S.O.', key: 'so', width: 15 },
+                            { header: 'Licencia', key: 'licencia', width: 20 },
+                            { header: 'ID TeamViewer', key: 'tv', width: 15 },
+                            { header: 'Estación', key: 'estacion', width: 15 },
+                            { header: 'VPN', key: 'vpn', width: 15 },
+                            { header: 'Capacidad KVA', key: 'kva', width: 15 },
+                            { header: 'Notas', key: 'notas', width: 30 },
+                            { header: 'Fotografía', key: 'foto', width: 20 }
                         ];
-                    });
 
-                    const csvContent = cabeceras.join(",") + "\n" + filas.map(e => e.join(",")).join("\n");
-                    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", url);
-                    link.setAttribute("download", "Inventario_TI_Detallado.csv");
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
+                        worksheet.columns = columns;
+
+                        // Estilo para cabeceras
+                        worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                        worksheet.getRow(1).fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FF0EA5E9' }
+                        };
+
+                        // Iterar y agregar filas
+                        for (let i = 0; i < this.equiposFiltrados.length; i++) {
+                            const eq = this.equiposFiltrados[i];
+                            
+                            // Agrega fila de texto base
+                            const row = worksheet.addRow({
+                                id: eq.assetTag || '',
+                                sn: eq.serialNumber || '',
+                                categoria: eq.categoria || '',
+                                marca: eq.marca || '',
+                                modelo: eq.modelo || '',
+                                estado: eq.estado || '',
+                                asignado: eq.asignadoA || '',
+                                departamento: eq.departamento || '',
+                                ubicacion: eq.ubicacion || '',
+                                fecha: eq.fecha || eq.fechaCompra || '',
+                                hostname: eq.hostname || '',
+                                ip: eq.ip || '',
+                                mac: eq.mac || '',
+                                procesador: eq.procesador || '',
+                                ram: eq.ram || '',
+                                hdd: eq.hdd || '',
+                                so: eq.so || '',
+                                licencia: eq.licencia || '',
+                                tv: eq.idTeamviewer || '',
+                                estacion: eq.estacion || '',
+                                vpn: eq.vpn || '',
+                                kva: eq.capacidadKva || '',
+                                notas: eq.notas || ''
+                            });
+
+                            // Alinear contenido verticalmente al centro
+                            row.alignment = { vertical: 'middle', wrapText: true };
+
+                            // Si hay foto, procesarla y ajustarla a la celda
+                            if (eq.foto) {
+                                try {
+                                    // Make the row taller to accommodate the image
+                                    row.height = 80;
+
+                                    const imageId = workbook.addImage({
+                                        base64: eq.foto,
+                                        extension: 'jpeg',
+                                    });
+
+                                    // Agregar la imagen a la celda específica (Columna 24 index 23)
+                                    worksheet.addImage(imageId, {
+                                        tl: { col: 23, row: row.number - 1 },
+                                        ext: { width: 100, height: 100 }
+                                    });
+                                } catch(err) {
+                                    console.error("Error agregando imagen a Excel en la fila " + row.number, err);
+                                }
+                            }
+                        }
+
+                        // Descargar el archivo nativo .xlsx
+                        const buffer = await workbook.xlsx.writeBuffer();
+                        saveAs(new Blob([buffer]), "Inventario_TI_Detallado.xlsx");
+
+                    } catch(error) {
+                        console.error("Error al exportar a Excel: ", error);
+                        alert("Hubo un problema al generar el archivo de Excel.");
+                    }
                 }
             }
         }).mount('#app')
