@@ -279,36 +279,41 @@
                 </div>
 
                 <!-- Filtros y Ordenamiento -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-6 flex gap-4 items-center justify-between dark-transition" :class="{'!flex-col !items-stretch': viewMode !== 'desktop', 'flex-col md:flex-row': viewMode === 'desktop'}">
-                    <div class="flex gap-4 w-full md:w-auto" :class="{'!flex-col': viewMode === 'mobile', 'flex-col sm:flex-row': viewMode !== 'mobile'}">
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-6 dark-transition">
+                    <div class="flex flex-col md:flex-row gap-4 w-full items-start md:items-center">
                         
-                        <div class="relative w-full flex gap-2" :class="viewMode === 'desktop' ? 'sm:w-80' : ''">
-                            <div class="relative flex-grow">
+                        <!-- Búsqueda -->
+                        <div class="flex-1 flex gap-2 w-full min-w-0">
+                            <div class="relative flex-grow min-w-0">
                                 <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-400"></i>
-                                <input v-model="filtroBusqueda" type="text" placeholder="S/N, ID, Asignado, Marca..." class="pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full theme-transition">
+                                <input v-model="filtroBusqueda" type="text" placeholder="S/N, ID, Asignado, Marca..." class="pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full theme-transition truncate">
                             </div>
                             <!-- Botón Escáner Barcode -->
-                            <button @click="iniciarEscaner('busqueda')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-white px-3 rounded-lg transition" title="Escanear Código de Barras">
+                            <button @click="iniciarEscaner('busqueda')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-white px-3 rounded-lg transition shrink-0" title="Escanear Código de Barras">
                                 <i class="fa-solid fa-barcode"></i>
                             </button>
                         </div>
                         
-                        <!-- Filtro Real por Estado -->
-                        <select v-model="filtroEstado" class="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-auto font-medium theme-transition">
-                            <option value="Todos">Todos los Estados</option>
-                            <option value="Activo">Activo (Asignado)</option>
-                            <option value="Bodega">En Bodega</option>
-                            <option value="Reparación">En Reparación</option>
-                            <option value="Baja">Dado de Baja</option>
-                        </select>
+                        <!-- Filtros Selectores -->
+                        <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto shrink-0">
+                            <!-- Filtro Real por Estado -->
+                            <select v-model="filtroEstado" class="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-40 font-medium theme-transition text-ellipsis">
+                                <option value="Todos">Todos los Estados</option>
+                                <option value="Activo">Activo (Asignado)</option>
+                                <option value="Bodega">En Bodega</option>
+                                <option value="Reparación">En Reparación</option>
+                                <option value="Baja">Dado de Baja</option>
+                            </select>
+                            
+                            <!-- SELECTOR DE VISTA Y ORDENAMIENTO -->
+                            <select v-model="modoVista" class="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-60 font-medium theme-transition text-ellipsis">
+                                <option value="grupo_estado">Agrupar por Estado</option>
+                                <option value="grupo_asignado_ubicacion">Agrupar por Asignado/Ubicación</option>
+                                <option value="az">Ordenar: A - Z</option>
+                                <option value="za">Ordenar: Z - A</option>
+                            </select>
+                        </div>
                         
-                        <!-- SELECTOR DE VISTA Y ORDENAMIENTO -->
-                        <select v-model="modoVista" class="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-auto font-medium theme-transition">
-                            <option value="grupo_estado">Agrupar por Estado</option>
-                            <option value="grupo_asignado_ubicacion">Agrupar por Asignado A / Ubicación</option>
-                            <option value="az">Ordenar: A - Z</option>
-                            <option value="za">Ordenar: Z - A</option>
-                        </select>
                     </div>
                 </div>
 
