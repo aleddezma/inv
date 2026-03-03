@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0ea5e9" id="meta-theme-color">
-    <title>Inventario de Equipo TI</title>
+    <title>INVENTARIO TI</title>
     <!-- Enlace para el Manifest de Instalación PWA -->
     <link id="manifest-link" rel="manifest" href="">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -127,7 +127,7 @@
                 <div class="w-16 h-16 bg-gradient-to-br from-brand-100 to-brand-200 text-brand-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner theme-transition">
                     <i class="fa-solid fa-barcode"></i>
                 </div>
-                <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-700 to-brand-500 theme-transition">Inventario TI</h2>
+                <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-700 to-brand-500 theme-transition">INVENTARIO TI</h2>
                 <p class="text-sm text-slate-500 mt-1">Gestión de activos tecnológicos</p>
             </div>
 
@@ -179,7 +179,7 @@
                     <div>
                         <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-700 to-brand-500 flex items-center gap-3 theme-transition pb-1" :class="{'text-2xl': viewMode === 'mobile'}">
                             <i class="fa-solid fa-boxes-stacked text-brand-600"></i>
-                            Inventario de Equipos
+                            INVENTARIO TI
                         </h1>
                         <div class="flex items-center gap-2 mt-1">
                             <span class="text-brand-700 dark:text-brand-300 text-xs font-bold uppercase tracking-wider theme-transition">
@@ -1063,8 +1063,8 @@
                     const iconB64 = btoa(iconSvg);
                     
                     const manifest = {
-                        name: "Inventario de Equipo TI",
-                        short_name: "Inventario TI",
+                        name: "INVENTARIO TI",
+                        short_name: "INVENTARIO TI",
                         description: "Gestión de activos tecnológicos",
                         start_url: window.location.href.split('?')[0],
                         display: "standalone",
