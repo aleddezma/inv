@@ -248,20 +248,24 @@
                         </div>
                     </div>
 
-                    <!-- Distribución por Estado -->
-                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 flex gap-4 shrink-0 items-center justify-between" :class="viewMode === 'mobile' ? 'w-full' : 'min-w-[280px]'">
-                        <div class="flex flex-col gap-2 w-full">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-green-500 text-[10px]"></i> Asignados</span>
-                                <span class="font-bold text-slate-800 dark:text-white">{{ resumenEstados['Activo'] || 0 }}</span>
+                    <!-- Distribución por Estado REDUCIDA -->
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-3 flex gap-4 shrink-0 items-center justify-center" :class="viewMode === 'mobile' ? 'w-full' : 'min-w-[280px]'">
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 w-full">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-green-500 text-[8px]"></i> Asignados</span>
+                                <span class="font-bold text-sm text-slate-800 dark:text-white">{{ resumenEstados['Activo'] || 0 }}</span>
                             </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-yellow-500 text-[10px]"></i> Bodega</span>
-                                <span class="font-bold text-slate-800 dark:text-white">{{ resumenEstados['Bodega'] || 0 }}</span>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-yellow-500 text-[8px]"></i> Bodega</span>
+                                <span class="font-bold text-sm text-slate-800 dark:text-white">{{ resumenEstados['Bodega'] || 0 }}</span>
                             </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-red-500 text-[10px]"></i> Reparación</span>
-                                <span class="font-bold text-slate-800 dark:text-white">{{ resumenEstados['Reparación'] || 0 }}</span>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-orange-500 text-[8px]"></i> Reparación</span>
+                                <span class="font-bold text-sm text-slate-800 dark:text-white">{{ resumenEstados['Reparación'] || 0 }}</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1"><i class="fa-solid fa-circle text-slate-400 text-[8px]"></i> Baja</span>
+                                <span class="font-bold text-sm text-slate-800 dark:text-white">{{ resumenEstados['Baja'] || 0 }}</span>
                             </div>
                         </div>
                     </div>
